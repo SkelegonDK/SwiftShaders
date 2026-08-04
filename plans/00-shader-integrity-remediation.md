@@ -1,0 +1,558 @@
+# SwiftShaders — Shader Integrity & Architecture Remediation
+
+**Status:** ready to execute · **Created:** 2026-08-04 · **Branch:** `claude/learn-codebase-37f658`
+
+Each phase is self-contained and executable in a fresh chat context. Read **Phase 0** first, every time — it is the verified API contract that the rest of the plan depends on. Do not proceed to a later phase until the previous phase's verification checklist passes.
+
+---
+
+## Phase 0 — Verified facts (READ FIRST, EVERY SESSION)
+
+Everything below was verified firsthand on this machine (Xcode 26.6, Swift 6.3.3, macOS SDK 26.5) by reading SDK files and running commands. **Do not re-derive these from memory, and do not trust web summaries that contradict them.**
+
+### 0.1 The stitchable calling convention — the "Allowed APIs" list
+
+Source: `/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk/System/Library/Frameworks/SwiftUICore.framework/Versions/A/Modules/SwiftUICore.swiftmodule/arm64e-apple-macos.swiftdoc` (doc comments live here; the `.swiftinterface` strips them — extract with `strings -n 4 <swiftdoc> | grep stitchable`).
+
+| Effect kind | Metal signature | SwiftUI supplies implicitly |
+|---|---|---|
+| `colorEffect` | `[[stitchable]] half4 name(float2 position, half4 color, args...)` | `position`, `color` (2) |
+| `distortionEffect` | `[[stitchable]] float2 name(float2 position, args...)` | `position` (1) |
+| `layerEffect` | `[[stitchable]] half4 name(float2 position, SwiftUI::Layer layer, args...)` | `position`, `layer` (2) |
+| `ShapeStyle` fill | `[[stitchable]] half4 name(float2 position, args...)` | `position` (1) |
+
+> **🚨 THE LOAD-BEARING FACT.** There is **no implicit `bounds` and no implicit `size`.** A function declaring `float4 bounds` requires the Swift caller to pass it explicitly. This is confirmed three ways: (a) the doc comments enumerate the implicit prefix exhaustively and never mention bounds; (b) `Shader.Argument.boundingRect` exists *precisely because* it is not implicit; (c) the repo's `float2 size` shaders, which pass size explicitly, are 100% correctly wired while every `float4 bounds` shader is broken.
+
+```swift
+// SwiftUICore.swiftinterface:6929
+public static var boundingRect: SwiftUICore.Shader.Argument { get }
+// doc: "Returns an argument value representing the bounding rect of the shape or view
+//       that the shader is attached to, as `float4(x, y, width, height)`."
+```
+
+### 0.2 `Shader.Argument` — complete, exact
+
+From `SwiftUICore.swiftinterface:6898–6936`. **Use only these. Do not invent factories.**
+
+```swift
+.float<T: BinaryFloatingPoint>(_ x: T)
+.float2<T>(_ x: T, _ y: T)   .float2(_ point: CGPoint)   .float2(_ size: CGSize)   .float2(_ vector: CGVector)
+.float3<T>(_ x: T, _ y: T, _ z: T)
+.float4<T>(_ x: T, _ y: T, _ z: T, _ w: T)
+.floatArray(_ array: [Float])          // → TWO MSL params: device const float*, int count
+.boundingRect                          // → float4(x, y, width, height)
+.color(_ color: Color)                 // → half4, premultiplied
+.colorArray(_ array: [Color])          // → TWO MSL params
+.image(_ image: Image)                 // → texture2d<half>; only ONE image per Shader
+.data(_ data: Data)                    // → TWO MSL params
+```
+
+### 0.3 `ShaderLibrary` — there is no checked lookup
+
+```swift
+@dynamicMemberLookup public struct ShaderLibrary: Equatable, @unchecked Sendable {
+  public static let `default`: ShaderLibrary
+  public static func bundle(_ bundle: Bundle) -> ShaderLibrary
+  public init(data: Data);  public init(url: URL)
+  public static subscript(dynamicMember name: String) -> ShaderFunction { get }
+  public subscript(dynamicMember name: String) -> ShaderFunction { get }
+}
+@dynamicCallable public struct ShaderFunction: Equatable, Sendable {
+  public func dynamicallyCall(withArguments args: [Shader.Argument]) -> Shader
+}
+```
+
+Both subscripts return **non-optional, non-throwing**. `dynamicallyCall` returns non-optional, non-throwing. **No compile-time check, no optional variant, no throwing variant exists.** This is why the 129 defects survived to runtime.
+
+**The one first-party validation hook:**
+
+```swift
+@available(iOS 18.0, macOS 15.0, tvOS 18.0, visionOS 2.0, *)
+extension Shader {
+  public func compile(as type: Shader.UsageType) async throws
+  public struct UsageType: Hashable, Sendable {
+    public static let shapeStyle, colorEffect, distortionEffect, layerEffect: Shader.UsageType
+  }
+}
+// doc: "For compilation to be successful the specified usage type must match how the
+//       shader is eventually used to render, and its current argument values must match
+//       the types of the arguments used when rendering."
+// Throws: an error describing why compilation failed.
+```
+
+⚠️ **macOS 15+ only.** Package minimum is `.macOS(.v14)`; CI runs `macos-14`. This test must be `@available`-gated and CI must move to `macos-15`/`macos-latest` for it to run.
+
+### 0.4 Availability of all shader APIs
+
+`@available(iOS 17.0, macOS 14.0, tvOS 17.0, *)` + `@available(watchOS, unavailable)`. No explicit visionOS clause — it comes via iOS. The repo writes `visionOS 1.0` explicitly, which is stricter but compatible.
+
+### 0.5 The verification oracle — `metal-objdump`
+
+**Tool availability on this machine** (`xcrun --find`): `metal`, `metal-nm`, `metal-objdump`, `metal-readobj`, `metal-source`, `metallib`, `metal-ar`, `metal-lipo` all present. **`metallib-dis` does NOT exist** — `xcrun: error: unable to find utility "metallib-dis"`.
+
+```bash
+xcrun metal-objdump --metallib -d Sources/SwiftShaders/Resources/default.metallib
+```
+Runs in **0.12 s**, emits 66,399 lines containing exactly **256 entry-point `define` lines** — one per stitchable function, fully typed:
+
+```llvm
+define <4 x half>  @invert(<2 x float> noundef %0, <4 x half> noundef %1, float noundef %2)
+define <2 x float> @ripple(<2 x float> noundef %0, <4 x float> noundef %1, float noundef %2, ...)
+define <4 x half>  @crtLayerEffect(<2 x float> noundef %0, %"struct.metal::texture2d" %1, [5 x <2 x float>] %2, ...)
+```
+
+Type map: `<2 x float>`=`float2`, `<4 x half>`=`half4`, `<4 x float>`=`float4`, `float`=`float`.
+
+⚠️ **Gotcha:** `SwiftUI::Layer` lowers to **two** IR parameters (`texture2d` + `[5 x <2 x float>]`). Naive IR-param counting over-counts layerEffect functions by one.
+
+Other useful tools:
+- `xcrun metal-nm --defined-only <metallib>` → names only, no types.
+- `xcrun metal-readobj --all <metallib>` → per-function name, type, content hash. Confirms all 256 are `METALLIB_VISIBLE_FUNCTION`.
+- `xcrun metal-source --extract=raw -f -o=<dir> <metallib>` → **recovers the original `.metal` sources byte-identically** (works because `build-shaders.sh` passes `-frecord-sources`). This is a free drift check: extracted source vs on-disk source.
+
+### 0.6 The defect inventory — ground truth
+
+Independently recounted with a comment-stripping, depth-counting parser. Artifacts in scratchpad: `metal-functions.tsv` (256), `swift-callsites.tsv` (216), `reconciliation.tsv` (216), `duplicate-view-methods.tsv`, plus reproducible `extract.py`.
+
+| | Count |
+|---|---|
+| `[[stitchable]]` Metal functions | **256** (157 color, 60 distortion, 39 layer, 0 malformed; all names distinct) |
+| Swift call sites | **216** (218 raw grep − 2 in doc comments) |
+| **MATCH** | **87** |
+| **ARITY** (all delta exactly −1) | **121** |
+| **MISSING** (no such Metal function) | **6** |
+| **KIND** (wrong effect method) | **2** |
+| **Total broken** | **129 of 216 (59.7%)** |
+| Unreferenced stitchable functions | **49** |
+| Duplicate `View` extension names | **7** |
+
+**The `bounds`/`size` split is the whole story:**
+
+| Convention | Metal fns | Call sites | Passing a matching arg | Result |
+|---|---|---|---|---|
+| `float4 bounds` | 144 | 122 | **0 (0.0%)** | 121 ARITY + 1 KIND, **zero MATCH** |
+| `float2 size` | 85 | 68 | **67 (98.5%)** | 67 MATCH + 1 KIND, **zero ARITY** |
+| Neither | 27 | 26 | — | 20 MATCH + 6 MISSING |
+
+`.float4(` and `.boundingRect` occur **zero times** in all of `Sources/`. 121 of 129 defects (94%) are this one omission.
+
+**All 6 MISSING** — every one in `Sources/SwiftShaders/Shaders/FluidSimulation/FluidSimulationModifier.swift`, and there is no `FluidSimulation.metal`:
+
+| Line | Function | Args passed |
+|---|---|---|
+| 80 | `fluidSimulation` | 6 |
+| 162 | `smoke` | 6 |
+| 315 | `inkDiffusion` | 7 |
+| 387 | `plasmaFluid` | 6 |
+| 458 | `magneticField` | 6 |
+| 529 | `oilSlick` | 6 |
+
+**All 2 KIND** — also in `FluidSimulationModifier.swift`:
+
+| Line | Function | Invoked as | Actually is | Metal decl |
+|---|---|---|---|---|
+| 244 | `waterSurface` | colorEffect, 6 args | distortionEffect, expects 5 | `Metal/WaterShader.metal:24` |
+| 600 | `vortex` | colorEffect, 7 args | layerEffect, expects 5 | `Metal/SwirlShader.metal:209` |
+
+> `smoke` is shipped to users — `Sources/SwiftShadersGallery/EffectCatalog.swift:558` lists it.
+
+### 0.7 Build & CI state — verified by running
+
+- `bash Scripts/build-shaders.sh` → **succeeds**, "Compiled 33 shaders". Warnings only (12 files, all unused-function/variable). Zero errors.
+- `swift build` → `Build complete! (0.23s)`. `swift test` → `Executed 155 tests, with 0 failures`.
+- **`Sources/SwiftShaders/Resources/default.metallib` is UNTRACKED in git and NOT gitignored.** `git ls-files` returns empty; `git check-ignore` exits 1.
+- **CI never builds shaders.** `.github/workflows/ci.yml` runs `swift build -c release` + `swift test` directly; never `make shaders`.
+- **SwiftPM emits a *warning*, not an error, for a declared-but-missing resource** (verified in SwiftPM's `TargetSourcesBuilder.swift`: `self.observabilityScope.emit(warning:)`). So a fresh CI checkout builds **green** with no shader library at all.
+- **Both CI steps have `continue-on-error: true`** — test failures do not fail the build today.
+- Toolchain: swift-tools-version 5.9, Swift 6.3.3. Tests are XCTest. **swift-testing already runs** alongside (Testing Library 1902, 0 tests found) — new tests may use either.
+
+### 0.8 SwiftPM & Metal — hard constraints
+
+- **SwiftPM's native build system never compiles `.metal`.** In `TargetSourcesBuilder.swift`, the `metal` rule appears only in `xcbuildFileTypes`, not `builtinRules`. Under `swift build`, `.process` on a `.metal` file **copies it verbatim**. Proof is still in this tree: `.build/.../SwiftShaders_SwiftShaders.bundle/` contains raw uncompiled `.metal` **and** swallowed `.swift` files from the previous config.
+- **Keep `exclude: ["Metal"]` and `.copy("Resources/default.metallib")`.** Never `.process` the Metal directory.
+- **One metallib per platform is mandatory.** All 8 SDKs compile fine individually, but merging fails — verified:
+  ```
+  $ xcrun metallib macosx.air iphoneos.air -o fat.metallib
+  LLVM ERROR: multiple symbols ('invert')!
+  $ xcrun metal-lipo -create m.metallib i.metallib -output uni.metallib
+  air-lipo: error: ... have the same architecture air64_v28 and therefore cannot be in the
+                   same universal binary
+  ```
+  Root cause: `-print-target-triple` is `air64-apple-darwin25.5.0` for **every** SDK — no OS discriminator.
+- **`ShaderLibrary.bundle(_:)` looks for exactly one filename: `default.metallib`.** No documented platform-selection hook. ⚠️ This is an unresolved constraint — see Phase 7's open decision.
+- `makeLibrary(filepath:)` is **deprecated** → use `makeLibrary(URL:)` (note the capitalised label, from `Metal.apinotes`).
+
+### 0.9 Anti-patterns — DO NOT DO THESE
+
+| ❌ Don't | ✅ Why / instead |
+|---|---|
+| Assume `bounds` or `size` is implicit | It isn't. Pass `.boundingRect` / `.float2(proxy.size)`. |
+| Use `MTLFunction` to enumerate parameters | **No such API.** Full protocol read from `MTLLibrary.h:130–206` — no parameter list property. |
+| Use `MTLComputePipelineReflection` on a stitchable fn | Impossible. All 256 are `MTLFunctionTypeVisible`, not `Kernel`; you cannot make a compute pipeline state from one. |
+| Use `metallib-dis` | Does not exist on this machine. Use `metal-objdump --metallib -d`. |
+| Assume `ImageRenderer` rasterizes shader effects | **UNPROVEN.** Apple's docs never mention shaders. Spike it in Phase 1 before relying on it. |
+| `.process` the `Metal/` directory | Silently swallows sibling `.swift` files. Proven in this tree. |
+| Build a fat multi-platform metallib | `metal-lipo` refuses. Verified above. |
+| `grep '\[\[stitchable\]\]'` | Repo uses **two spellings** — `[[stitchable]]` (`InvertShader.metal:31`) and `[[ stitchable ]]` (`RippleShader.metal:46`). Use `\[\[\s*stitchable\s*\]\]`. |
+| Count IR params naively for layerEffect | `SwiftUI::Layer` = 2 IR params. |
+| Call `Shader.compile(as:)` unguarded | macOS 15+ / iOS 18+ only. |
+| Trust "SwiftPM now compiles Metal automatically" | False for CLI builds. That describes Xcode. |
+
+---
+
+## Phase 1 — Make the build able to fail
+
+**Nothing in this plan is verifiable until CI can go red.** Today it cannot: shaders aren't built, the metallib isn't tracked, a missing resource is a warning, and both CI steps swallow errors.
+
+### Implement
+
+1. **Decide metallib provenance.** *Recommendation: build in CI, do not commit.* A 2.4 MB binary regenerated on every shader edit is bad git churn, and Phase 7 will produce one per platform anyway. Add `Sources/SwiftShaders/Resources/*.metallib` to `.gitignore` and make CI run `make shaders` before `swift build`.
+   *Alternative if you want `swift build` to work on a bare clone with no Xcode:* commit it instead, and add the drift check from step 3 to catch staleness. Pick one and record it in an ADR (Phase 8).
+2. **Fix `.github/workflows/ci.yml`:**
+   - Add a `make shaders` (or `bash Scripts/build-shaders.sh`) step **before** `swift build`.
+   - **Remove `continue-on-error: true` from the test step.** This is the single highest-value line change in the plan.
+   - Bump `runs-on: macos-14` → `macos-15` (required for `Shader.compile(as:)` in Phase 3).
+3. **Fix `make clean`.** It currently deletes `Resources/default.metallib`, which `Package.swift:36` requires to exist — leaving the package unbuildable until `make shaders` reruns. Either make `clean` not delete it, or make `build` depend on regenerating it unconditionally.
+4. **Spike: can `ImageRenderer` rasterize a shader effect?** ~20 lines, settles Phase 6's design:
+   ```swift
+   let v = Color.white.frame(width: 8, height: 8)
+       .colorEffect(ShaderLibrary.swiftShaders.invert(.float(1.0)))
+   let cg = ImageRenderer(content: v).cgImage   // inspect centre pixel: black or white?
+   ```
+   `invert` is a good probe — `Metal/InvertShader.metal:31`, colorEffect, 1 explicit arg, currently a MATCH.
+   **Record the result in this file.** If white → `ImageRenderer` drops shader effects and Phase 6 must drop the golden-pixel test.
+5. **Spike: does `Shader.compile(as:)` throw on an arity mismatch?** Apple documents type matching, not arity. Try it against `wave` (`Metal/WaveShader.metal:19`, needs 5, gets 4) and record the outcome.
+
+### Verify
+
+- [ ] `git status` shows metallib either tracked or ignored — not in limbo.
+- [ ] Delete `Resources/default.metallib`, push, and confirm **CI is red** (or that the build step regenerates it). Green here means the gate still doesn't work.
+- [ ] Introduce a deliberately failing test, push, confirm **CI is red**. Revert.
+- [ ] `make clean && make build` succeeds from clean.
+- [ ] Both spike results written into this file under "Phase 1 results".
+
+### Guards
+
+- Do not skip the two spikes. Phases 3 and 6 both branch on their answers.
+- Do not `.process` the Metal directory to "fix" the resource problem.
+
+### ✅ Phase 1 RESULTS — executed 2026-08-04
+
+**Spike 1 — `ImageRenderer` DOES rasterize shader effects. Golden-pixel testing is viable.**
+
+`Color.white` + `.colorEffect(invert(.float(1.0)))` rendered at scale 1, headless in `swift test`, 0.115 s:
+
+| | centre pixel |
+|---|---|
+| with shader | `(0, 0, 0, 255)` — black |
+| control, no shader | `(255, 255, 255, 255)` — white |
+
+Phase 6 may keep the golden-pixel test. Apple's "may change in future releases" caveat still applies, so keep goldens coarse (a few probe pixels, generous tolerance), not full-image hashes.
+
+**Spike 2 — `Shader.compile(as:)` catches ALL THREE defect classes, with precise diagnostics.** This is much stronger than the plan assumed and **simplifies Phase 2 substantially.**
+
+| Probe | Result |
+|---|---|
+| `invert(.float(1.0))` as `.colorEffect` — correct | compiled OK |
+| `wave(4 args)` as `.distortionEffect` — the repo's current ARITY bug | **THREW** |
+| `wave(.boundingRect + 4 args)` — the Phase 3 fix | compiled OK |
+| `invert` as `.distortionEffect` — KIND mismatch | **THREW** |
+| `smoke(...)` — MISSING function | **THREW** |
+
+Verbatim diagnostics — note the second line names the exact defect Phase 0.1 predicted:
+
+```
+ARITY   RBShaderError Code=2 "Function stitching failed: wave.
+        Parameter at index 1: invalid type, float4, expected float.
+        Too few function arguments: expected 5, received 4."
+KIND    RBShaderError Code=2 "Function stitching failed: invert.
+        Expected float2 result, has MTLDataTypeHalf4."
+MISSING RBShaderError Code=1 "Unknown Metal function: smoke"
+```
+
+> **Revision to Phase 2.** Do **not** build a `metal-objdump` parser as the primary oracle. Enumerate every binding, call `compile(as:)`, assert it does not throw. `metal-objdump` remains useful for generating the *manifest* and for the drift check, but it is no longer needed to detect defects. This removes the `SwiftUI::Layer` two-IR-param gotcha and the two-spelling `[[stitchable]]` parsing problem from the critical path.
+
+**Spike 3 — metallib loads in-process:** 256 function names via `device.makeDefaultLibrary(bundle: .module)`; `invert` ✅, `wave` ✅, `smoke` ❌. Ground truth from Phase 0.6 confirmed at runtime.
+
+**❌ Correction to Phase 0.7 — "CI goes green with no metallib" is WRONG for this package.**
+
+Verified by removing `default.metallib` and rebuilding: SwiftPM emits the predicted warning *and then the build fails hard*, because with no valid resources SwiftPM stops generating `Bundle.module` at all:
+
+```
+warning: Invalid Resource 'Resources/default.metallib': File not found.
+Sources/SwiftShaders/Core/ShaderLibrary+Bundle.swift:19:18: error: type 'Bundle' has no member 'module'
+```
+
+The general inference (SwiftPM warns rather than errors on a missing resource) is correct, but this target declares exactly *one* resource, so losing it removes `Bundle.module` and the compile fails. Good news — but it is a confusing error, so `ShaderLibraryIntegrityTests` still earns its place by catching a *partial or truncated* metallib, which would compile fine.
+
+**Changes landed**
+
+| File | Change |
+|---|---|
+| `.github/workflows/ci.yml` | `macos-14` → `macos-15` (required for `compile(as:)`); added a **Compile Metal shaders** step before build; **removed `continue-on-error: true` from both jobs** |
+| `.gitignore` | added `Sources/SwiftShaders/Resources/*.metallib` — decision recorded: generated, never committed, CI rebuilds it |
+| `Makefile` | `clean` now removes `*.metallib`; comments explain why bare `swift build` is unsafe |
+| `Tests/.../ShaderLibraryIntegrityTests.swift` | **new** — 2 tests: metallib present in bundle (no GPU needed), and loads with ≥200 functions plus spot checks across all three effect kinds |
+
+`swift test` → **160 tests, 0 failures**. `make clean && make build` → clean.
+
+> **🚨 BLOCKER FOR CI, discovered during verification.** Only **8 files** are tracked under `Sources/` — `Bridge/MetalToSwiftUIBridge.swift`, `Core/ShaderCore.swift`, all five `Enterprise/*.swift`, and `SwiftShaders.swift`. That is *exactly* the dead code from the Appendix, and nothing else. The other **89** source files, all 33 `.metal` files, `Makefile`, and `Scripts/` are untracked. **CI on `main` has been building a package that contains only the dead modules.** The workflow changes above do nothing until the real library is committed. Commit before Phase 2.
+
+---
+
+## Phase 2 — Build the binding oracle
+
+Make the 129 defects visible as failing tests **before** fixing any of them. This is the seam the whole plan hangs on.
+
+> **⚠️ Read the Phase 1 results box first.** The spikes proved `Shader.compile(as:)` throws on all three defect classes (arity, kind, missing) with precise diagnostics. **It is the primary oracle — build the tests on it.** The `metal-objdump` manifest below is now a secondary aid (for the generated signature record and the drift check), not the detection mechanism. Steps 1–2 are optional; step 3 is not.
+
+### Implement
+
+1. **`Scripts/extract-metal-signatures.sh`** — run `xcrun metal-objdump --metallib -d Resources/default.metallib`, parse the 256 `define` lines, emit a normalized manifest (TSV or JSON) of `name → (effect kind, ordered explicit param types)`.
+   - Copy the parser shape from the scratchpad's `extract.py` (depth-counting, comment-stripping) rather than writing a line-based regex.
+   - **Handle the `SwiftUI::Layer` two-IR-param collapse** (Phase 0.5).
+   - Derive effect kind from IR shape: return `<4 x half>` + 2nd param `<4 x half>` → color; return `<2 x float>` → distortion; return `<4 x half>` + `texture2d` → layer.
+2. **Check the manifest into the repo** at `Sources/SwiftShaders/Resources/shader-signatures.tsv` (or similar). It becomes the reviewable record of the Metal surface.
+3. **`Tests/SwiftShadersTests/ShaderBindingTests.swift`** — three tests:
+   - **Name existence:** every Swift call-site name is in `MTLLibrary.functionNames`. Get the library via `MTLCreateSystemDefaultDevice()?.makeDefaultLibrary(bundle: .module)` — copy the device pattern from `Sources/SwiftShaders/Utilities/MetalHelpers.swift:16`. *This catches the 6 MISSING.*
+   - **Arity + kind:** every call site's explicit arg count and effect method match the manifest. *This catches the 121 ARITY and 2 KIND.*
+   - **Drift:** `xcrun metal-source --extract=raw` output matches the on-disk `.metal` sources, proving the metallib is current.
+4. **Expect these tests to FAIL on first run, with 129 failures.** That is the success criterion for this phase.
+
+### Verify
+
+- [ ] `xcrun metal-objdump --metallib -d ... | grep -c '^define'` → **256**.
+- [ ] Manifest has 256 rows; kind histogram is **157 color / 60 distortion / 39 layer**.
+- [ ] `swift test` reports **129** binding failures — 121 arity, 6 missing, 2 kind. If your count differs, reconcile against `scratchpad/reconciliation.tsv` before proceeding.
+- [ ] CI is red.
+
+### Guards
+
+- Do not fix any defect in this phase. The failing count is the deliverable.
+- Do not use `MTLFunction` reflection (0.9). `functionNames` is the only runtime introspection that works.
+- Do not hand-maintain the manifest — it must be generated.
+
+---
+
+## Phase 3 — Fix the 121 arity defects
+
+Mechanical and uniform: every one is a `float4 bounds` shader missing its bounds argument, delta exactly −1, bounds always the **first** explicit parameter.
+
+### Implement
+
+For each of the 122 `float4 bounds` call sites, insert `.boundingRect` as the **first** argument:
+
+```swift
+// before — Sources/SwiftShaders/Shaders/Wave/WaveModifier.swift:62
+ShaderLibrary.swiftShaders.wave(.float(time), .float(amplitude), .float(frequency), .float(direction))
+// after
+ShaderLibrary.swiftShaders.wave(.boundingRect, .float(time), .float(amplitude), .float(frequency), .float(direction))
+```
+
+- Work file by file, using `scratchpad/reconciliation.tsv` as the worklist. `Shaders/Water/` (6 sites) and `Shaders/Distortion/` (7 sites) are good starters — small, fully broken, self-contained.
+- **Copy the correct pattern from `Sources/SwiftShaders/Shaders/Kaleidoscope/KaleidoscopeModifier.swift:87-93`**, which already passes its size argument explicitly and is a MATCH.
+- Alternative: change the Metal side to the `float2 size` convention instead. *Not recommended* — it means editing 144 Metal declarations plus their bodies rather than adding one token at 122 Swift sites, and `.boundingRect` gives the shader the origin too.
+
+### Verify
+
+- [ ] `grep -rc '\.boundingRect' Sources/ ` → **122**.
+- [ ] Binding tests: **0 arity failures**, 8 remaining (6 missing + 2 kind).
+- [ ] `swift build` clean.
+- [ ] Run the Gallery (`make app` / `Scripts/make-app.sh`) and confirm a `bounds`-convention effect (e.g. Wave, Ripple, Barrel) now renders correctly rather than reading a garbage first uniform.
+
+### Guards
+
+- Do not "fix" a site by deleting the `float4 bounds` parameter from the Metal function — that breaks the shader body, which uses it.
+- Do not use `.float4(0,0,w,h)` where `.boundingRect` is meant. The latter is supplied by SwiftUI at draw time and is correct under transforms.
+- Do not touch the 85 `float2 size` shaders. They are already 100% correct.
+
+---
+
+## Phase 4 — Resolve the FluidSimulation family
+
+All 8 remaining defects (6 MISSING + 2 KIND) live in one file: `Sources/SwiftShaders/Shaders/FluidSimulation/FluidSimulationModifier.swift` (761 lines). There is no `FluidSimulation.metal`.
+
+### Implement
+
+**Decide:** write the 6 missing shaders, or delete the module.
+
+*Recommendation: delete.* The module has never worked — 6 of its 8 functions bind to nothing, and the other 2 hijack `waterSurface` and `vortex` from `Shaders/Water/` and `Shaders/Swirl/` through the wrong effect method. Writing 6 new fluid shaders is new feature work, not remediation, and shouldn't block this plan.
+
+- **If deleting:** remove the file, remove `smoke` from `Sources/SwiftShadersGallery/EffectCatalog.swift:558`, and check the 7 duplicate `View` extension names (`scratchpad/duplicate-view-methods.tsv`) — deleting this file resolves `vortex` and `waterSurface` collisions outright.
+- **If implementing:** add `Sources/SwiftShaders/Metal/FluidSimulation.metal` with the 6 functions matching the arg counts already at the call sites (80: 6, 162: 6, 315: 7, 387: 6, 458: 6, 529: 6 — **plus** `.boundingRect` or a `float2 size`, per the convention you choose). Fix line 244 to `.distortionEffect` and line 600 to `.layerEffect` with the correct arg counts (5 each).
+
+Either way, resolve the remaining 5 duplicate `View` extension names (`embers`, `neonElectric`, `pinch`, `twirl`, `voronoiNoise`) — they compile as label-distinguished overloads but are a real navigability hazard.
+
+### Verify
+
+- [ ] Binding tests: **0 failures**, all 216 (or fewer, if deleted) call sites MATCH.
+- [ ] `swift build` clean; Gallery launches; no effect in the catalog resolves to a missing function.
+- [ ] `scratchpad/dupes.py` rerun shows the intended set of duplicates resolved.
+
+### Guards
+
+- Do not stub the missing shaders with pass-through bodies to make the tests green. Delete or implement.
+- Do not leave `smoke` in the Gallery if the module is deleted.
+
+---
+
+## Phase 5 — Deepen: one binding module
+
+Only now, with the seam verified, is it worth changing its shape. *(Report candidate 1.)*
+
+### Implement
+
+Introduce a module that owns name + effect kind + argument list, so the 216 call sites stop each restating the convention:
+
+```swift
+// sketch — design it properly before committing to this shape
+public struct ShaderBinding {
+    let name: String
+    let kind: EffectKind          // .color | .distortion | .layer
+    let arguments: [Shader.Argument]
+}
+```
+
+The interface should make the wrong thing unrepresentable: a caller cannot pick the effect method independently of the binding, and `.boundingRect` is supplied by the module rather than remembered at each site.
+
+- **Before implementing, run `/design-an-interface`** to explore 2–3 shapes. There is a real fork: a generated enum of bindings (compile-time safe, needs codegen) vs a runtime-validated value type (simpler, checked by Phase 2's tests).
+- The Phase 2 manifest is the natural codegen input if you go that route.
+
+### Verify
+
+- [ ] Binding tests still pass, now exercising the module's interface rather than raw call sites.
+- [ ] `grep -c 'ShaderLibrary.swiftShaders' Sources/` drops sharply — call sites go through the module.
+- [ ] Gallery renders identically. Capture before/after screenshots.
+
+### Guards
+
+- Do not add this layer *on top of* the existing call sites — replace them. Two paths is the problem you're fixing.
+- Do not invent a `ShaderLibrary` API that doesn't exist (0.3). The module wraps the dynamic lookup; it cannot make it checked.
+
+---
+
+## Phase 6 — Replace the test suite
+
+*(Report candidate 6.)* Today: 155 tests, ~100 tautological, ~22 `XCTAssertNotNil` on a non-optional `some View`, **all pass with `Metal/` deleted**.
+
+### Implement
+
+1. **Delete** the ~122 tautological and vacuous tests in `Tests/SwiftShadersTests/ShaderEffectsTests.swift`. Keep the ~19 that assert real behavior (`testHSLToRGB`, `testSmoothstep`, `testKeyframeInterpolation`, `testOpacityClamping`, the easing and `ShaderMath` tests).
+2. **Delete** `testMemoryFootprint`-style assertions — `MemoryLayout<CGPoint>.size == 16` is a platform ABI fact, and the 0.1 s wall-clock loop is flaky.
+3. **Keep** Phase 2's binding tests as the core.
+4. **Add a descriptor-consistency test** (feeds Phase 7): ids unique, every default inside its declared range, categories agree across catalogs.
+5. **Add `Shader.compile(as:)` coverage**, gated `@available(macOS 15, *)`, per the Phase 1 spike result. This is the only first-party validation of argument *types*.
+6. **Golden-pixel test — only if the Phase 1 spike proved `ImageRenderer` applies shader effects.** If it didn't, note that here and skip it; do not substitute a hand-rolled Metal compute harness, which duplicates SwiftUI's binding semantics and proves less than it appears to.
+
+### Verify
+
+- [ ] Delete `Sources/SwiftShaders/Metal/` locally, rebuild the metallib empty, run `swift test` → **tests FAIL**. This is the acceptance criterion for the whole phase. Restore afterward.
+- [ ] Test count drops from 155 to roughly 40–60, and the suite covers more.
+- [ ] CI red on a deliberately broken shader name; green on `main`.
+
+### Guards
+
+- Do not assert `XCTAssertNotNil` on a non-optional. It cannot fail.
+- Do not write a test that constructs a value and asserts its stored properties equal the literals just passed in.
+- Do not assume `ImageRenderer` works (0.9).
+
+---
+
+## Phase 7 — Descriptor, catalogs, clock, Metal header, distribution
+
+The remaining report candidates. Each is independent — execute in any order, or drop any of them.
+
+### 7a — One effect descriptor *(candidate 3)*
+
+Same facts are authored four times: init defaults, `View` extension defaults, `ShaderCatalog` row, `EffectCatalog` row. Measured drift: **30 / 92 / ~213** competing effect counts; `gaussianBlur` catalogued with no Swift function; 8 category conflicts; `chromatic` default 0.02 in `ShaderPreset` vs 0.01 everywhere else; `isAnimatable` and `minimumVersion` dead (all 30 rows take defaults); 8 Particles entries flagged `animated: false` that self-animate; ~120 public effects in neither catalog.
+*Note:* all ~200 Gallery slider defaults **do** match their function defaults — the drift is identity and taxonomy, not numbers.
+→ Make the descriptor the module; `View` extension, catalog and Gallery read it. Verify with the Phase 6 consistency test.
+
+### 7b — One clock *(candidate 4)*
+
+Two conventions ~7.8×10⁸ s apart: `timeIntervalSinceReferenceDate` (ShaderView, AnimatedShader, `RippleModifier.swift:187`) vs `startTime.distance(to:)` (22 modifiers, Gallery). `ShaderView.animationTime` is never written, so the non-animated branch is frozen at 0. `ShaderAnimator` is a 468-line `CADisplayLink` engine with zero call sites.
+→ One `ShaderClock` owning elapsed time, pause and speed, with `TimelineView` as its implementation and an injectable clock for tests. Delete `ShaderAnimator` or move it behind the same interface.
+
+### 7c — Metal common header *(candidate 5)*
+
+No project-local `#include` exists in any of the 33 `.metal` files. `hash` defined 5×, `luminance` 6× under two names, 2D value noise **3× with different results for the same input** (`FrostShader.metal:27` / `SketchShader.metal:25` use `mix(a,b,u.x) + …`; `NoiseShader.metal:19` uses `mix(mix(a,b,u.x), mix(c,d,u.x), u.y)`). 2D rotation open-coded 12+ times, 5× inside `SwirlShader.metal` alone.
+→ `Sources/SwiftShaders/Metal/SwiftShadersCommon.h`, included everywhere. `build-shaders.sh` already compiles the directory as a unit. While here, clear the 12 unused-function/variable warnings from 0.7.
+
+### 7d — Distribution *(candidate 7)* — ⚠️ HAS AN OPEN DECISION
+
+Verified constraints (0.8): one metallib per platform is mandatory; they cannot be merged; `ShaderLibrary.bundle(_:)` resolves exactly `default.metallib` with **no documented platform-selection hook**.
+
+> **Open decision — needs an answer before this sub-phase can be planned.** How does a single SPM resource bundle serve the right `default.metallib` to iOS, tvOS, visionOS and macOS consumers? Phase 0 could not determine whether Apple's resource-variant/thinning machinery handles this for `.copy`'d resources. **Investigate before building.** Possible outcomes: (i) Xcode-driven builds handle it and CLI `swift build` is macOS-only by design; (ii) ship per-platform bundles and select at runtime with `ShaderLibrary(url:)` instead of `.bundle(.module)`; (iii) accept macOS-only and document it.
+
+Also fix, independent of that: `SwiftShaders.podspec` declares `ios.deployment_target = '15.0'` (contradicts `Package.swift`'s iOS 17 and every `@available(iOS 17.0)`) and ships **no** metallib and no `resource_bundles` — the CocoaPods distribution is broken outright. Either fix it or remove CocoaPods support.
+
+### Verify (7)
+
+- [ ] 7a: consistency test green; one authoritative effect count; Gallery renders unchanged.
+- [ ] 7b: single time convention; `grep -c timeIntervalSinceReferenceDate Sources/` → 0 or 1.
+- [ ] 7c: `bash Scripts/build-shaders.sh` succeeds with **zero warnings**; the three noise implementations produce identical output for identical input.
+- [ ] 7d: decision recorded as an ADR; podspec either correct or removed.
+
+---
+
+## Phase 8 — Final verification & documentation
+
+### Verify everything
+
+- [ ] `make clean && make build && make test` from a clean checkout — green.
+- [ ] `swift test` — all tests pass; binding tests report **0** of 216 broken.
+- [ ] **Negative controls, all must go red:** (a) rename one `[[stitchable]]` function; (b) drop one `.boundingRect`; (c) delete `Resources/default.metallib`. Revert each.
+- [ ] `xcrun metal-source --extract=raw` output matches on-disk `.metal` sources.
+- [ ] CI green on `main`, red on each negative control.
+- [ ] Gallery builds, launches, and every catalogued effect renders.
+
+### Anti-pattern sweep
+
+```bash
+grep -rn 'XCTAssertNotNil' Tests/                          # expect 0 on non-optionals
+grep -rn 'continue-on-error' .github/workflows/            # expect 0
+grep -rnE '\[\[\s*stitchable\s*\]\]' Sources/ | wc -l      # expect 256 (or fewer if 7c removed dead fns)
+grep -rn 'timeIntervalSinceReferenceDate' Sources/         # expect ≤1 after 7b
+grep -rn 'opacity(0.99)' Sources/                          # expect 0 — the Bridge stub
+grep -rn 'applyMetalShader\|CircuitBreaker\|EventBus' Sources/ README.md   # expect 0
+```
+
+### Document
+
+- Create `CONTEXT.md` with the domain vocabulary this plan introduces: **effect**, **binding**, **descriptor**, **clock**, **effect kind**. None of these are currently defined anywhere.
+- Create `docs/adr/` and record the load-bearing decisions: metallib provenance (Phase 1), FluidSimulation deleted vs implemented (Phase 4), binding module shape (Phase 5), platform distribution (7d).
+- Fix `README.md:19`, which describes `MetalToSwiftUIBridge` mapping `.metal` shaders into SwiftUI modifiers. It does not — it prints a line and returns `content.opacity(0.99)`. (Deleted in the candidate-2 cleanup; see below.)
+
+---
+
+## Appendix — Candidate 2 (delete unreferenced modules)
+
+Not given its own phase because it blocks nothing and conflicts with nothing. Do it whenever convenient — it is the cheapest win in the plan. **487 lines, zero call sites:**
+
+| Module | Lines | Note |
+|---|---|---|
+| `Enterprise/CircuitBreaker.swift` | 33 | `.halfOpen` unreachable — never resets once tripped |
+| `Enterprise/RetryPolicy.swift` | 24 | 1 s/2 s backoff in a 60 Hz render library |
+| `Enterprise/EventBus.swift` | 21 | No unsubscribe; leaks by construction |
+| `Enterprise/MetricsCollector.swift` | 19 | 1 caller — `ErrorHandler`, inside `Enterprise/` |
+| `Enterprise/ErrorHandler.swift` | 16 | — |
+| `Bridge/MetalToSwiftUIBridge.swift` | 28 | Applies no shader; per-frame unguarded `print`; escaped `\\(shaderName)` never interpolates |
+| `Core/ShaderModifier.swift` | 335 | `ShaderModifierProtocol` has zero conformances |
+| `Core/ShaderCore.swift` + `SwiftShadersInfo` | 39 | Two disagreeing version constants (1.0.0 / 2.0.0) |
+
+The shader path is synchronous and non-throwing end to end, so no resilience module can attach to it even in principle. Deleting collapses nine ways to apply an effect down to four. Update `README.md:19` at the same time.
+
+---
+
+## Appendix — Corrections to the earlier architecture review
+
+| Earlier claim | Verified |
+|---|---|
+| 116 mismatched of ~213 | **129 mismatched of 216** — 13 sites were missed, most likely those nested two closures deep inside `TimelineView` |
+| 6 missing functions (named set) | ✅ confirmed exactly |
+| 49 unreferenced stitchable functions | ✅ confirmed exactly |
+| 256 stitchable functions | ✅ confirmed exactly |
+| "Golden pixel test via `ImageRenderer`" | ✅ **proven in Phase 1** — the shader is applied; white→black through `invert` |
+| "2.4 MB binary checked into git" | ❌ **wrong** — it was *untracked and un-ignored*. Now explicitly gitignored and CI-generated (Phase 1) |
+| "CI goes green with no metallib" | ❌ **wrong for this package** — a missing resource removes `Bundle.module`, so the build fails hard (Phase 1) |
+| "The metallib is the only untracked artifact" | ❌ **far worse** — only 8 of 97 source files are tracked, and they are exactly the dead modules (Phase 1) |
