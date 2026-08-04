@@ -13,25 +13,33 @@ concurrency:
 jobs:
   build:
     name: Build & Test
-    runs-on: macos-14
+    # macos-15 is required: Shader.compile(as:) — the only first-party check that
+    # a shader's arguments match its Metal declaration — is macOS 15 / iOS 18+.
+    runs-on: macos-15
     timeout-minutes: 15
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Cache SPM
         uses: actions/cache@v4
         with:
           path: .build
           key: ${{ runner.os }}-spm-${{ hashFiles('Package.resolved') }}
           restore-keys: ${{ runner.os }}-spm-
-      
+
+      # Required. SwiftPM's CLI build has no Metal rule, and default.metallib is a
+      # generated artifact that is not committed. Without this step the package
+      # builds green with no shader library at all — SwiftPM only *warns* about a
+      # declared-but-missing resource.
+      - name: Compile Metal shaders
+        run: ./Scripts/build-shaders.sh
+
       - name: Build
         run: swift build -c release
-      
+
       - name: Test
         run: swift test --enable-code-coverage
-        continue-on-error: true
 
   lint:
     name: SwiftLint
@@ -40,4 +48,3 @@ jobs:
       - uses: actions/checkout@v4
       - name: SwiftLint
         uses: norio-nomura/action-swiftlint@3.2.1
-        continue-on-error: true
