@@ -35,6 +35,16 @@ jobs:
       - name: Compile Metal shaders
         run: ./Scripts/build-shaders.sh
 
+      # build-shaders.sh regenerates shader-signatures.tsv, which *is* committed —
+      # it is the manifest the binding tests check every call site against. If a
+      # .metal file changed without the manifest being regenerated, the two
+      # disagree here rather than silently validating call sites against shaders
+      # that no longer exist.
+      - name: Check the shader signature manifest is current
+        run: |
+          git diff --exit-code -- Sources/SwiftShaders/Resources/shader-signatures.tsv \
+            || { echo "::error::shader-signatures.tsv is stale. Run ./Scripts/build-shaders.sh and commit the result."; exit 1; }
+
       - name: Build
         run: swift build -c release
 

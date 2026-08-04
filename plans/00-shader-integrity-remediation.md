@@ -122,7 +122,7 @@ Independently recounted with a comment-stripping, depth-counting parser. Artifac
 | **ARITY** (all delta exactly −1) | **121** |
 | **MISSING** (no such Metal function) | **6** |
 | **KIND** (wrong effect method) | **2** |
-| **Total broken** | **129 of 216 (59.7%)** |
+| **Total broken** | **129 of 216 (59.7%)** — ⚠️ superseded: **157**, see the Phase 2 results box. This count is argument-*count* based and misses the 28 `half3` type mismatches. |
 | Unreferenced stitchable functions | **49** |
 | Duplicate `View` extension names | **7** |
 
@@ -321,16 +321,105 @@ Make the 129 defects visible as failing tests **before** fixing any of them. Thi
 
 ### Verify
 
-- [ ] `xcrun metal-objdump --metallib -d ... | grep -c '^define'` → **256**.
-- [ ] Manifest has 256 rows; kind histogram is **157 color / 60 distortion / 39 layer**.
-- [ ] `swift test` reports **129** binding failures — 121 arity, 6 missing, 2 kind. If your count differs, reconcile against `scratchpad/reconciliation.tsv` before proceeding.
-- [ ] CI is red.
+- [x] `xcrun metal-objdump --metallib -d ... | grep -c '^define'` → 4035 total, **256** non-`internal` entry points. (The plan's original "256 define lines" omitted the `internal` stitching-traits templates; filter on ` internal `.)
+- [x] Manifest has 256 rows; kind histogram is **157 color / 60 distortion / 39 layer**.
+- [x] `swift test` reports the binding failures — **157**, not the 129 predicted here: 121 arity, 28 type, 6 missing, 2 kind. See the results box.
+- [x] CI is red.
 
 ### Guards
 
 - Do not fix any defect in this phase. The failing count is the deliverable.
 - Do not use `MTLFunction` reflection (0.9). `functionNames` is the only runtime introspection that works.
 - Do not hand-maintain the manifest — it must be generated.
+
+### ✅ Phase 2 RESULTS — executed 2026-08-04
+
+**The oracle is built and red. Two independent oracles agree exactly: 157 of 216 call sites are broken.**
+
+> **🚨 THE DEFECT COUNT IS 157, NOT 129.** Phase 0.6's inventory counted arguments, so it could not
+> see a fourth defect class: **28 call sites pass `.float3(…)` to a `half3` parameter.** No
+> `Shader.Argument` factory produces a `half3` — the only half-typed argument SwiftUI can supply is
+> `.color`, which is a `half4` — so these shaders cannot be driven from Swift at all, whatever the
+> caller passes. SwiftUI's stitcher rejects them with `unsupported MTLDataType: 18` (= `MTLDataTypeHalf3`).
+> **They need the Metal declaration changed, not the call site**, which makes them a different kind of
+> work from Phase 3's 121. See "New work" below.
+
+| Defect class | Count | Test | Fixed in |
+|---|---|---|---|
+| ARITY — wrong number of arguments | **121** | `testEveryCallSitePassesTheNumberOfArgumentsItsFunctionExpects` | Phase 3 |
+| TYPE — `half3` parameter, unbindable | **28** | `testEveryCallSitePassesArgumentsOfTheDeclaredTypes` | **new, see below** |
+| MISSING — no such Metal function | **6** | `testEveryCallSiteResolvesToAFunctionInTheLibrary` | Phase 4 |
+| KIND — wrong effect method | **2** | `testEveryCallSiteUsesTheEffectMethodItsFunctionDeclares` | Phase 4 |
+| **Total broken** | **157 of 216 (72.7%)** | | |
+
+The four static tests partition the defects — each site is counted once, in the first class that
+applies. `Shader.compile(as:)` then rejects **exactly the same 157**, independently: no site the
+static tests call broken is accepted, and no site they call clean is rejected other than the 28. The
+121 / 6 / 2 figures reproduce Phase 0.6 exactly.
+
+`swift test` → **176 tests, 158 failures** (157 defects + 1 aggregate from the compile oracle).
+
+**What landed**
+
+| File | What it is |
+|---|---|
+| `Scripts/extract-metal-signatures.py` | Parses `metal-objdump --metallib -d` into a manifest. Collapses `SwiftUI::Layer`'s two IR params; derives effect kind from IR shape; fails on duplicate or unclassifiable names. Called from `build-shaders.sh`, so it cannot drift. |
+| `Sources/SwiftShaders/Resources/shader-signatures.tsv` | **Committed.** 256 rows, `157 color / 60 distortion / 39 layer`. Declared as a package resource, so tests read it from `Bundle.module`. |
+| `Tests/…/Support/ShaderCallSiteScanner.swift` | Comment-stripping, depth-counting scanner over `Sources/**/*.swift`. Finds 216 call sites with effect method and argument kinds. |
+| `Tests/…/Support/ShaderSignatureManifest.swift` | Manifest reader. |
+| `Tests/…/ShaderCallSiteScannerTests.swift` | 12 tests on the scanner itself. |
+| `Tests/…/ShaderBindingTests.swift` | 7 tests: the four defect classes, the manifest-matches-metallib guard, and the drift check. |
+| `.github/workflows/ci.yml` | Fails if the committed manifest is stale w.r.t. the `.metal` sources. |
+
+**Verification**
+
+- Manifest cross-checked against Phase 0.6's independently *source*-derived inventory: 256 names, **0 signature disagreements**.
+- The Swift scanner cross-checked against Phase 0.6's Python extractor: **216 sites, 0 disagreements** on file, line, function, effect method, argument count and argument kinds. Two independent implementations.
+- Manifest is byte-identical across a `make clean && make build`.
+- **Negative controls, all red:**
+  | Control | Result |
+  |---|---|
+  | Rename a `[[stitchable]]` function, rebuild, regenerate | MISSING 6 → **7**; compile oracle 157 → **158** |
+  | Regenerate shaders but not the manifest | manifest guard fails, naming both the added and removed function |
+  | Edit a `.metal` source without rebuilding | drift check fails |
+  | Delete `default.metallib` | **8 tests fail** |
+
+**❌ Correction to Phase 1 — deleting the metallib is no longer a build failure.** Phase 1 recorded
+that removing `default.metallib` breaks the build outright, because losing the target's only resource
+stops SwiftPM generating `Bundle.module`. Declaring `shader-signatures.tsv` as a second resource ends
+that: the package now builds, and 8 tests fail instead — including `ShaderLibraryIntegrityTests`,
+which Phase 1 added for exactly this. **This is an improvement** (a legible test failure beats
+`error: type 'Bundle' has no member 'module'`), but it means the resource-bundle tests are now
+load-bearing rather than a backstop. Do not delete them.
+
+**⚠️ `XCTFail` issues raised from an async test are not all reported.** `testEveryCallSiteCompiles`
+raised 157 issues; XCTest's console printed **85**, and the run summary counted 85. The internal
+counter and a written-out dump both said 157. The compile oracle therefore reports one aggregate
+failure containing every rejection. **If you add a test that raises many issues from an `async`
+method, do not trust the reported count** — count in-process and assert on that number.
+
+### New work this phase uncovered — the 28 `half3` bindings
+
+34 of the 256 Metal functions declare a `half3` parameter; 28 call sites bind to them, across 9
+modules (`Emboss`, `Mosaic`, `Neon`, `Particles`, `Posterize`, `Sepia`, `Sketch`, `Threshold`,
+`Vignette`). Every one is a colour-ish uniform (`lowColor`, `highColor`, `tintColor`, …).
+
+Two options, and this needs a decision before Phase 3 is called done:
+
+1. **`half3` → `float3` in the Metal declarations** (28 functions actually referenced, 34 in total).
+   Call sites already pass `.float3(…)`, so no Swift changes. Costs a little register bandwidth.
+2. **`half3` → `half4` and pass `.color(…)`** from Swift. Idiomatic for colour uniforms, and
+   `.color` is the factory Apple provides for exactly this, but it changes the shader bodies and the
+   28 call sites, and drags alpha into functions that do not want it.
+
+*Recommendation: option 1.* It is a one-token edit per declaration, keeps the call sites untouched,
+and does not change any shader body. Fold it into Phase 3, which is already the mechanical-edit phase,
+and record the choice in a Phase 8 ADR.
+
+> Note for Phase 3: the diagnostic for a `half3` function also complains that the `SwiftUI::Layer`
+> parameter is an "unsupported struct type". That is a **cascade, not a second defect** — `kaleidoscope`
+> declares the identical `SwiftUI::Layer` parameter and compiles cleanly. Fix the `half3` and the
+> layer complaint goes with it.
 
 ---
 
@@ -356,7 +445,7 @@ ShaderLibrary.swiftShaders.wave(.boundingRect, .float(time), .float(amplitude), 
 ### Verify
 
 - [ ] `grep -rc '\.boundingRect' Sources/ ` → **122**.
-- [ ] Binding tests: **0 arity failures**, 8 remaining (6 missing + 2 kind).
+- [ ] Binding tests: **0 arity failures**. Remaining: **36** (28 type + 6 missing + 2 kind), or **8** if the `half3` work from the Phase 2 results box is folded in here as recommended.
 - [ ] `swift build` clean.
 - [ ] Run the Gallery (`make app` / `Scripts/make-app.sh`) and confirm a `bounds`-convention effect (e.g. Wave, Ripple, Barrel) now renders correctly rather than reading a garbage first uniform.
 
@@ -556,3 +645,5 @@ The shader path is synchronous and non-throwing end to end, so no resilience mod
 | "2.4 MB binary checked into git" | ❌ **wrong** — it was *untracked and un-ignored*. Now explicitly gitignored and CI-generated (Phase 1) |
 | "CI goes green with no metallib" | ❌ **wrong for this package** — a missing resource removes `Bundle.module`, so the build fails hard (Phase 1) |
 | "The metallib is the only untracked artifact" | ❌ **far worse** — only 8 of 97 source files are tracked, and they are exactly the dead modules (Phase 1) |
+| 129 broken call sites | ❌ **understated** — **157 of 216**. A fourth defect class (28 `half3` type mismatches) is invisible to argument counting (Phase 2) |
+| `metal-objdump` needed as the Phase 2 oracle | ❌ not for detection — `Shader.compile(as:)` finds all 157 on its own. The disassembly is still what generates the manifest (Phase 2) |

@@ -27,3 +27,9 @@ done
 xcrun -sdk macosx metallib "$AIR_DIR"/*.air -o "$OUT_DIR/default.metallib"
 
 echo "Compiled $count shaders -> $OUT_DIR/default.metallib"
+
+# Regenerate the signature manifest from the metallib that was just linked.
+# It is generated here rather than by hand so it cannot drift: the binding
+# tests compare every Swift call site against it, and a stale manifest would
+# check the call sites against shaders that no longer exist.
+python3 Scripts/extract-metal-signatures.py
