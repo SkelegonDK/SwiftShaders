@@ -29,6 +29,7 @@ public struct WaterSurfaceModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.waterSurface(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(frequency),
@@ -63,6 +64,7 @@ public struct WaterReflectionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.waterReflection(
+                .boundingRect,
                 .float(time),
                 .float(reflectivity),
                 .float(distortion)
@@ -95,6 +97,7 @@ public struct CausticsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.caustics(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(intensity)
@@ -130,6 +133,7 @@ public struct OceanWavesModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.oceanWaves(
+                .boundingRect,
                 .float(time),
                 .float(waveHeight),
                 .float(waveLength),
@@ -166,6 +170,7 @@ public struct RainDropsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.rainDrops(
+                .boundingRect,
                 .float(time),
                 .float(dropDensity),
                 .float(dropSize),
@@ -199,6 +204,7 @@ public struct UnderwaterModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.underwater(
+                .boundingRect,
                 .float(time),
                 .float(depth),
                 .float(murkiness)

@@ -455,6 +455,68 @@ ShaderLibrary.swiftShaders.wave(.boundingRect, .float(time), .float(amplitude), 
 - Do not use `.float4(0,0,w,h)` where `.boundingRect` is meant. The latter is supplied by SwiftUI at draw time and is correct under transforms.
 - Do not touch the 85 `float2 size` shaders. They are already 100% correct.
 
+### ✅ Phase 3 RESULTS — executed 2026-08-04
+
+**149 of the 157 defects are fixed. 8 remain, all of them Phase 4's.**
+
+| | Before | After |
+|---|---|---|
+| ARITY | 121 | **0** |
+| TYPE (`half3`) | 28 | **0** |
+| MISSING | 6 | 6 |
+| KIND | 2 | 2 |
+| `Shader.compile(as:)` rejections | 157 | **8** |
+
+`swift test` → **178 tests, 9 failures** (8 defects + 1 aggregate), all in `FluidSimulationModifier.swift`.
+
+**The 121 arity fixes.** Every one was uniform, which was checked before editing rather than assumed:
+all 121 had a delta of exactly −1 and `float4` as their first explicit parameter. `.boundingRect` was
+inserted as the first argument at each, preserving both call-site layouts in the codebase (inline for
+single-line calls, its own line matching the existing indentation for multi-line ones). 17 files.
+
+**The 28 `half3` fixes** *(option 1, chosen by the user)*. 55 parameters across 34 stitchable
+functions retyped `half3` → `float3`. Only parameter lists were touched — `half3` locals inside
+shader bodies are untouched, since half arithmetic is cheaper and nothing outside the function can
+observe it. That produced 43 compile errors where a now-`float3` parameter met a `half3` local; each
+was fixed by wrapping the parameter at the point of use in `half3(…)`, which restores exactly the
+previous semantics (the value was rounded to half before the arithmetic anyway). One expression in
+`EmbossShader.metal:209` was reassociated (`metalColor * half(highlight)` → `half3(metalColor * highlight)`).
+
+**Verification**
+
+- `make clean && make build` clean, Gallery target included. Shader build: 0 errors, and no new warnings.
+- `grep -rho '\.boundingRect' Sources/` → **121**. The 122nd `float4 bounds` call site is `waterSurface`,
+  which is a KIND defect and belongs to Phase 4.
+- `.float4(` in `Sources/` → **0**. No site fakes the bounds rect.
+- `half3` in stitchable parameter lists → **0**. Manifest still 256 rows, 157/60/39.
+- New `Tests/…/ShaderRenderingTests.swift` — see below.
+
+**🚨 A broken binding renders the view PURE BLACK, it does not degrade to unmodified content.**
+Measured directly: a 64×64 black→white gradient under `pixelate`, sampled along one row.
+
+| | row 8, every 4th pixel |
+|---|---|
+| no shader | `0,1,8,20,36,51,66,84,102,119,138,156,177,196,216,237` — smooth |
+| with `.boundingRect` (fixed) | `7,7,7,7, 65,65,65,65, 135,135,135,135, 213,213,213,213` — quantised at exactly 16 |
+| without `.boundingRect` (the bug) | `0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0` — **all black** |
+
+So the 121 arity defects were not a subtle visual degradation; those effects were rendering black.
+This is also why the tautological test suite never noticed: nothing rendered anything.
+
+**New test — `ShaderRenderingTests`.** The binding tests prove a call site's arguments have the right
+count and types; they cannot prove the shader receives the right *values*. A site missing its
+`.boundingRect` still passed a well-typed argument list — every later argument simply slid one
+position left. `pixelate` is the probe because its output is a direct function of one argument, so
+the test asserts the image is quantised at exactly the block size it passed. **Negative control run:
+remove `.boundingRect` from the test's own call site and it fails** ("the whole row is one colour").
+A second test asserts the source gradient is not already flat, so the first cannot pass vacuously.
+
+This is an early down-payment on Phase 6 item 6, which the Phase 1 spike had already cleared.
+
+> ⚠️ When writing a negative control for a rendering test, edit the call site **the test itself
+> uses**. The first attempt here edited `PixelateModifier.swift`, which the test never calls, and the
+> control passed — briefly looking like the test was worthless when it was the control that was wrong.
+
 ---
 
 ## Phase 4 — Resolve the FluidSimulation family

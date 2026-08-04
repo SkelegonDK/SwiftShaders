@@ -23,6 +23,7 @@ public struct BarrelDistortionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.barrelDistortion(
+                .boundingRect,
                 .float(strength),
                 .float(zoom)
             ),
@@ -55,6 +56,7 @@ public struct SphereBulgeModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.sphereBulge(
+                .boundingRect,
                 .float(center.x),
                 .float(center.y),
                 .float(radius),
@@ -89,6 +91,7 @@ public struct DistortionPinchModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.pinchDistortion(
+                .boundingRect,
                 .float(center.x),
                 .float(center.y),
                 .float(radius),
@@ -127,6 +130,7 @@ public struct DistortionSwirlModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.swirlDistortion(
+                .boundingRect,
                 .float(center.x),
                 .float(center.y),
                 .float(radius),
@@ -158,6 +162,7 @@ public struct DistortionKaleidoscopeModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.kaleidoscopeDistort(
+                .boundingRect,
                 .float(segments),
                 .float(rotation)
             ),
@@ -190,6 +195,7 @@ public struct MagnifyModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.magnify(
+                .boundingRect,
                 .float(center.x),
                 .float(center.y),
                 .float(radius),
@@ -228,6 +234,7 @@ public struct LensWarpModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.lensWarp(
+                .boundingRect,
                 .float(k1),
                 .float(k2),
                 .float(center.x),

@@ -73,6 +73,7 @@ public struct VoronoiNoiseModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiNoise(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(jitter),
@@ -117,6 +118,7 @@ public struct VoronoiCellsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiCells(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(jitter),
@@ -166,6 +168,7 @@ public struct VoronoiEdgeGlowModifier: ViewModifier {
         let components = glowColor.rgbComponents
         return content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiEdgeGlow(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(jitter),
@@ -211,6 +214,7 @@ public struct VoronoiCrystalModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiCrystal(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(facetSharpness),
@@ -256,6 +260,7 @@ public struct VoronoiShatteredModifier: ViewModifier {
         let components = crackColor.rgbComponents
         return content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiShattered(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(crackWidth),
@@ -301,6 +306,7 @@ public struct VoronoiCellularModifier: ViewModifier {
         let components = membraneColor.rgbComponents
         return content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiCellular(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(membraneWidth),
@@ -346,6 +352,7 @@ public struct VoronoiHoneycombModifier: ViewModifier {
         let components = wallColor.rgbComponents
         return content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiHoneycomb(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(wallWidth),
@@ -385,6 +392,7 @@ public struct VoronoiDistortModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.voronoiDistort(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(distortAmount)
@@ -428,6 +436,7 @@ public struct VoronoiLiquidModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.voronoiLiquid(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(flowSpeed),
@@ -479,6 +488,7 @@ public struct VoronoiLavaModifier: ViewModifier {
         let hot = hotColor.rgbComponents
         return content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiLava(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(heatIntensity),
@@ -525,6 +535,7 @@ public struct VoronoiPlasmaModifier: ViewModifier {
         let components = plasmaColor.rgbComponents
         return content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiPlasma(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(pulseSpeed),
@@ -569,6 +580,7 @@ public struct VoronoiCausticsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiCaustics(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(brightness),
@@ -613,6 +625,7 @@ public struct VoronoiStainedGlassModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiStainedGlass(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(leadWidth),
@@ -657,6 +670,7 @@ public struct VoronoiFrostModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.voronoiFrost(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(crackDepth),

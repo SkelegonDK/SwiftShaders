@@ -54,6 +54,7 @@ public struct ChromaticModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.chromaticAberration(
+                .boundingRect,
                 .float(intensity),
                 .float(center.x),
                 .float(center.y)
@@ -83,6 +84,7 @@ public struct DirectionalChromaticModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.directionalChromatic(
+                .boundingRect,
                 .float(intensity),
                 .float(angle)
             )
@@ -122,6 +124,7 @@ public struct PulsingChromaticModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.pulsingChromatic(
+                .boundingRect,
                 .float(time),
                 .float(baseIntensity),
                 .float(pulseSpeed),
@@ -152,6 +155,7 @@ public struct RGBSplitModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.rgbSplit(
+                .boundingRect,
                 .float(splitX),
                 .float(splitY)
             )

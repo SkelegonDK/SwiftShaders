@@ -52,6 +52,7 @@ public struct DissolveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.dissolve(
+                .boundingRect,
                 .float(progress),
                 .float(scale),
                 .float(edgeWidth)
@@ -88,6 +89,7 @@ public struct DirectionalDissolveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.directionalDissolve(
+                .boundingRect,
                 .float(progress),
                 .float(angle),
                 .float(edgeWidth)
@@ -124,6 +126,7 @@ public struct RadialDissolveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.radialDissolve(
+                .boundingRect,
                 .float(progress),
                 .float(center.x),
                 .float(center.y),
@@ -161,6 +164,7 @@ public struct BurnDissolveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.burnDissolve(
+                .boundingRect,
                 .float(progress),
                 .float(scale),
                 .float(burnWidth)
@@ -193,6 +197,7 @@ public struct PixelDissolveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.pixelDissolve(
+                .boundingRect,
                 .float(progress),
                 .float(pixelSize)
             )

@@ -52,6 +52,7 @@ public struct NoiseModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.noise(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(scale)
@@ -88,6 +89,7 @@ public struct FilmGrainModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.filmGrain(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(size)
@@ -120,6 +122,7 @@ public struct PerlinDistortModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.perlinDistort(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(scale)
@@ -159,6 +162,7 @@ public struct FBMNoiseModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.fbmNoise(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(octaves),
@@ -193,6 +197,7 @@ public struct NoiseVoronoiModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.noiseVoronoi(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(intensity)
@@ -228,6 +233,7 @@ public struct TurbulenceModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.turbulence(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(scale),

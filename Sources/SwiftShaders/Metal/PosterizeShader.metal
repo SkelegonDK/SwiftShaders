@@ -130,10 +130,10 @@ using namespace metal;
 [[stitchable]] half4 posterizePalette(
     float2 position,
     half4 color,
-    half3 color1,
-    half3 color2,
-    half3 color3,
-    half3 color4,
+    float3 color1,
+    float3 color2,
+    float3 color3,
+    float3 color4,
     float levels
 ) {
     // Get luminance
@@ -145,13 +145,13 @@ using namespace metal;
     // Map to palette
     half3 result;
     if (posterizedLum < 0.25) {
-        result = mix(color1, color2, half(posterizedLum * 4.0));
+        result = mix(half3(color1), half3(color2), half(posterizedLum * 4.0));
     } else if (posterizedLum < 0.5) {
-        result = mix(color2, color3, half((posterizedLum - 0.25) * 4.0));
+        result = mix(half3(color2), half3(color3), half((posterizedLum - 0.25) * 4.0));
     } else if (posterizedLum < 0.75) {
-        result = mix(color3, color4, half((posterizedLum - 0.5) * 4.0));
+        result = mix(half3(color3), half3(color4), half((posterizedLum - 0.5) * 4.0));
     } else {
-        result = color4;
+        result = half3(color4);
     }
     
     return half4(result, color.a);
@@ -163,8 +163,8 @@ using namespace metal;
 [[stitchable]] half4 posterizeDuotone(
     float2 position,
     half4 color,
-    half3 darkColor,
-    half3 lightColor,
+    float3 darkColor,
+    float3 lightColor,
     float levels
 ) {
     // Convert to grayscale
@@ -174,7 +174,7 @@ using namespace metal;
     float posterizedLum = floor(lum * levels) / (levels - 1.0);
     
     // Map to duotone
-    half3 result = mix(darkColor, lightColor, half(posterizedLum));
+    half3 result = mix(half3(darkColor), half3(lightColor), half(posterizedLum));
     
     return half4(result, color.a);
 }
@@ -185,9 +185,9 @@ using namespace metal;
 [[stitchable]] half4 posterizeTritone(
     float2 position,
     half4 color,
-    half3 shadowColor,
-    half3 midColor,
-    half3 highlightColor,
+    float3 shadowColor,
+    float3 midColor,
+    float3 highlightColor,
     float levels
 ) {
     float lum = dot(float3(color.rgb), float3(0.299, 0.587, 0.114));
@@ -196,9 +196,9 @@ using namespace metal;
     // Three-way blend
     half3 result;
     if (posterizedLum < 0.5) {
-        result = mix(shadowColor, midColor, half(posterizedLum * 2.0));
+        result = mix(half3(shadowColor), half3(midColor), half(posterizedLum * 2.0));
     } else {
-        result = mix(midColor, highlightColor, half((posterizedLum - 0.5) * 2.0));
+        result = mix(half3(midColor), half3(highlightColor), half((posterizedLum - 0.5) * 2.0));
     }
     
     return half4(result, color.a);

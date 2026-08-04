@@ -53,7 +53,7 @@ static float noise(float2 p) {
     float2 size,
     float time,
     float density,
-    half3 sparkleColor,
+    float3 sparkleColor,
     float intensity
 ) {
     float2 uv = position / size;
@@ -75,7 +75,7 @@ static float noise(float2 p) {
     float sparkle = smoothstep(0.1, 0.0, dist) * twinkle * intensity;
     
     // Add to color
-    half3 result = color.rgb + sparkleColor * half(sparkle);
+    half3 result = color.rgb + half3(sparkleColor) * half(sparkle);
     
     return half4(result, color.a);
 }
@@ -91,7 +91,7 @@ static float noise(float2 p) {
     float speed,
     float density,
     float particleSize,
-    half3 particleColor
+    float3 particleColor
 ) {
     float2 uv = position / size;
     half3 result = color.rgb;
@@ -118,7 +118,7 @@ static float noise(float2 p) {
         
         // Alpha based on layer depth
         float alpha = 1.0 - float(layer) * 0.3;
-        result += particleColor * half(particle * alpha);
+        result += half3(particleColor) * half(particle * alpha);
     }
     
     return half4(result, color.a);
@@ -135,7 +135,7 @@ static float noise(float2 p) {
     float speed,
     float density,
     float particleSize,
-    half3 particleColor
+    float3 particleColor
 ) {
     float2 uv = position / size;
     half3 result = color.rgb;
@@ -158,7 +158,7 @@ static float noise(float2 p) {
         float dist = length(cellUV - particlePos);
         float particle = smoothstep(particleSize, 0.0, dist);
         
-        result += particleColor * half(particle * (1.0 - float(layer) * 0.25));
+        result += half3(particleColor) * half(particle * (1.0 - float(layer) * 0.25));
     }
     
     return half4(result, color.a);
@@ -266,7 +266,7 @@ static float noise(float2 p) {
     float2 size,
     float time,
     float count,
-    half3 glowColor,
+    float3 glowColor,
     float glowSize
 ) {
     float2 uv = position / size;
@@ -293,7 +293,7 @@ static float noise(float2 p) {
         
         float glow = smoothstep(glowSize, 0.0, dist) * pulse;
         
-        result += glowColor * half(glow);
+        result += half3(glowColor) * half(glow);
     }
     
     return half4(result, color.a);
@@ -309,7 +309,7 @@ static float noise(float2 p) {
     float time,
     float density,
     float drift,
-    half3 dustColor
+    float3 dustColor
 ) {
     float2 uv = position / size;
     half3 result = color.rgb;
@@ -333,7 +333,7 @@ static float noise(float2 p) {
         // Vary brightness
         float brightness = hash(cell + float(i) * 50.0) * 0.5 + 0.5;
         
-        result += dustColor * half(dust * brightness * 0.3);
+        result += half3(dustColor) * half(dust * brightness * 0.3);
     }
     
     return half4(result, color.a);

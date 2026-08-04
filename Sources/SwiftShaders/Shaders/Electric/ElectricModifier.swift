@@ -27,6 +27,7 @@ public struct LightningModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.lightning(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(branchiness),
@@ -60,6 +61,7 @@ public struct PlasmaModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.plasma(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(colorSpeed)
@@ -95,6 +97,7 @@ public struct ElectricArcModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.electricArc(
+                .boundingRect,
                 .float(time),
                 .float(start.x),
                 .float(start.y),
@@ -130,6 +133,7 @@ public struct StaticElectricityModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.staticElectricity(
+                .boundingRect,
                 .float(time),
                 .float(density),
                 .float(sparkSize)
@@ -162,6 +166,7 @@ public struct ElectricFieldModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.electricField(
+                .boundingRect,
                 .float(time),
                 .float(lineCount),
                 .float(flowSpeed)
@@ -194,6 +199,7 @@ public struct ElectricNeonModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.electricNeon(
+                .boundingRect,
                 .float(time),
                 .float(glowIntensity),
                 .float(flickerSpeed)

@@ -60,6 +60,7 @@ public struct WaveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.wave(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(frequency),
@@ -103,6 +104,7 @@ public struct MultiWaveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.multiWave(
+                .boundingRect,
                 .float(time),
                 .float(amplitudeX),
                 .float(amplitudeY),
@@ -142,6 +144,7 @@ public struct RadialWaveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.radialWave(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(frequency),
@@ -180,6 +183,7 @@ public struct WaveFlagModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.waveFlag(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(frequency),
@@ -217,6 +221,7 @@ public struct LiquidWaveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.liquidWave(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(turbulence),
@@ -254,6 +259,7 @@ public struct JellyWaveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.jellyWave(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(stiffness),

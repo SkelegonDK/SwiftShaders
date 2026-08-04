@@ -33,7 +33,7 @@ public struct PixelateModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         content.distortionEffect(
-            ShaderLibrary.swiftShaders.pixelate(.float(pixelSize)),
+            ShaderLibrary.swiftShaders.pixelate(.boundingRect, .float(pixelSize)),
             maxSampleOffset: CGSize(width: CGFloat(pixelSize), height: CGFloat(pixelSize))
         )
     }
@@ -60,6 +60,7 @@ public struct PixelateTransitionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.pixelateTransition(
+                .boundingRect,
                 .float(progress),
                 .float(maxPixelSize)
             ),
@@ -84,7 +85,7 @@ public struct HexPixelateModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         content.distortionEffect(
-            ShaderLibrary.swiftShaders.hexPixelate(.float(hexSize)),
+            ShaderLibrary.swiftShaders.hexPixelate(.boundingRect, .float(hexSize)),
             maxSampleOffset: CGSize(width: 50, height: 50)
         )
     }
@@ -106,7 +107,7 @@ public struct DiamondPixelateModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         content.distortionEffect(
-            ShaderLibrary.swiftShaders.diamondPixelate(.float(diamondSize)),
+            ShaderLibrary.swiftShaders.diamondPixelate(.boundingRect, .float(diamondSize)),
             maxSampleOffset: CGSize(width: 50, height: 50)
         )
     }
@@ -133,6 +134,7 @@ public struct DotMatrixModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.dotMatrix(
+                .boundingRect,
                 .float(dotSize),
                 .float(dotSpacing)
             )
@@ -168,6 +170,7 @@ public struct LEDMatrixModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.ledMatrix(
+                .boundingRect,
                 .float(ledSize),
                 .float(ledGap),
                 .float(brightness)

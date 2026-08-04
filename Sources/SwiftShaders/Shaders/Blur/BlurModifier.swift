@@ -33,7 +33,7 @@ public struct BlurModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         content.colorEffect(
-            ShaderLibrary.swiftShaders.boxBlurSimulation(.float(radius))
+            ShaderLibrary.swiftShaders.boxBlurSimulation(.boundingRect, .float(radius))
         )
     }
 }
@@ -62,6 +62,7 @@ public struct RadialBlurModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.radialBlur(
+                .boundingRect,
                 .float(center.x),
                 .float(center.y),
                 .float(strength)
@@ -91,6 +92,7 @@ public struct MotionBlurModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.motionBlur(
+                .boundingRect,
                 .float(angle),
                 .float(strength)
             )
@@ -126,6 +128,7 @@ public struct TiltShiftModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.tiltShiftBlur(
+                .boundingRect,
                 .float(focusY),
                 .float(focusWidth),
                 .float(blurStrength)
@@ -162,6 +165,7 @@ public struct DepthOfFieldModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.depthOfFieldBlur(
+                .boundingRect,
                 .float(focalDistance),
                 .float(aperture),
                 .float(maxBlur)
@@ -198,6 +202,7 @@ public struct FrostModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.frostBlur(
+                .boundingRect,
                 .float(time),
                 .float(frostAmount),
                 .float(grainSize)
@@ -227,6 +232,7 @@ public struct SoftGlowModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.softGlow(
+                .boundingRect,
                 .float(intensity),
                 .float(threshold)
             )

@@ -52,8 +52,8 @@ static float luminance(half3 color) {
     SwiftUI::Layer layer,
     float2 size,
     float lineIntensity,
-    half3 paperColor,
-    half3 pencilColor
+    float3 paperColor,
+    float3 pencilColor
 ) {
     float2 pixelSize = 1.0 / size;
     
@@ -85,7 +85,7 @@ static float luminance(half3 color) {
     float stroke = edge * lineIntensity;
     stroke = clamp(stroke, 0.0, 1.0);
     
-    half3 result = mix(paperColor + half(paperNoise), pencilColor, half(stroke));
+    half3 result = mix(half3(paperColor) + half(paperNoise), half3(pencilColor), half(stroke));
     
     return half4(result, 1.0);
 }
@@ -99,8 +99,8 @@ static float luminance(half3 color) {
     float2 size,
     float lineSpacing,
     float lineWidth,
-    half3 paperColor,
-    half3 inkColor
+    float3 paperColor,
+    float3 inkColor
 ) {
     float2 pixelSize = 1.0 / size;
     half4 original = layer.sample(position);
@@ -132,7 +132,7 @@ static float luminance(half3 color) {
     
     ink = max(ink, edge);
     
-    half3 result = mix(paperColor, inkColor, half(ink));
+    half3 result = mix(half3(paperColor), half3(inkColor), half(ink));
     
     return half4(result, 1.0);
 }
@@ -146,8 +146,8 @@ static float luminance(half3 color) {
     float2 size,
     float threshold,
     float lineWidth,
-    half3 paperColor,
-    half3 inkColor
+    float3 paperColor,
+    float3 inkColor
 ) {
     float2 pixelSize = 1.0 / size;
     
@@ -168,7 +168,7 @@ static float luminance(half3 color) {
     // Threshold for clean lines
     float ink = step(threshold, edge);
     
-    half3 result = mix(paperColor, inkColor, half(ink));
+    half3 result = mix(half3(paperColor), half3(inkColor), half(ink));
     
     return half4(result, 1.0);
 }
@@ -181,8 +181,8 @@ static float luminance(half3 color) {
     SwiftUI::Layer layer,
     float2 size,
     float smudgeAmount,
-    half3 paperColor,
-    half3 charcoalColor
+    float3 paperColor,
+    float3 charcoalColor
 ) {
     float2 pixelSize = 1.0 / size;
     half4 original = layer.sample(position);
@@ -206,7 +206,7 @@ static float luminance(half3 color) {
     float darkness = (1.0 - lum) + grain * (1.0 - lum);
     darkness = clamp(darkness, 0.0, 1.0);
     
-    half3 result = mix(paperColor, charcoalColor, half(darkness));
+    half3 result = mix(half3(paperColor), half3(charcoalColor), half(darkness));
     
     return half4(result, 1.0);
 }

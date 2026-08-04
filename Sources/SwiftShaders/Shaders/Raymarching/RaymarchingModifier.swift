@@ -72,6 +72,7 @@ public struct RaymarchingModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.raymarching(
+                .boundingRect,
                 .float(time),
                 .float(cameraDistance),
                 .float(rotationSpeed),
@@ -153,6 +154,7 @@ public struct MetaballsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.metaballs(
+                .boundingRect,
                 .float(time),
                 .float(Double(blobCount)),
                 .float(smoothness),
@@ -242,6 +244,7 @@ public struct SDFShapesModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.sdfShapes(
+                .boundingRect,
                 .float(time),
                 .float(Double(operation.rawValue)),
                 .float(rotationSpeed),
@@ -312,6 +315,7 @@ public struct InfiniteGridModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.infiniteGrid(
+                .boundingRect,
                 .float(time),
                 .float(gridSize),
                 .float(moveSpeed),
@@ -397,6 +401,7 @@ public struct TunnelModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.tunnel(
+                .boundingRect,
                 .float(time),
                 .float(Double(shape.rawValue)),
                 .float(speed),
@@ -468,6 +473,7 @@ public struct CloudsVolumetricModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.cloudsVolumetric(
+                .boundingRect,
                 .float(time),
                 .float(density),
                 .float(coverage),
@@ -539,6 +545,7 @@ public struct FractalTerrainModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.fractalTerrain(
+                .boundingRect,
                 .float(time),
                 .float(height),
                 .float(Double(octaves)),
@@ -604,6 +611,7 @@ public struct BlackHoleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.blackHole(
+                .boundingRect,
                 .float(time),
                 .float(mass),
                 .float(diskBrightness),

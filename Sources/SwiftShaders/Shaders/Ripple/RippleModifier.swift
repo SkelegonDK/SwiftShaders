@@ -90,6 +90,7 @@ public struct RippleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.ripple(
+                .boundingRect,
                 .float(time),
                 .float(origin.x),
                 .float(origin.y),
@@ -138,6 +139,7 @@ public struct MultiRippleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.multiRipple(
+                .boundingRect,
                 .float(time),
                 .float(rippleCount),
                 .float(amplitude),
@@ -187,6 +189,7 @@ public struct AnimatedRippleModifier: ViewModifier {
             let time = timeline.date.timeIntervalSinceReferenceDate * speed
             content.distortionEffect(
                 ShaderLibrary.swiftShaders.ripple(
+                    .boundingRect,
                     .float(time),
                     .float(origin.x),
                     .float(origin.y),

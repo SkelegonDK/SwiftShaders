@@ -53,6 +53,7 @@ public struct GlitchModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.glitch(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(blockSize)
@@ -83,6 +84,7 @@ public struct GlitchColorModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.glitchColor(
+                .boundingRect,
                 .float(time),
                 .float(intensity)
             )
@@ -118,6 +120,7 @@ public struct VHSGlitchModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.vhsGlitch(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(noiseAmount)
@@ -158,6 +161,7 @@ public struct DigitalCorruptionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.digitalCorruption(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(blockWidth),
@@ -195,6 +199,7 @@ public struct SignalInterferenceModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.signalInterference(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(frequency)

@@ -82,7 +82,7 @@ using namespace metal;
     float2 position,
     half4 color,
     float2 size,
-    half3 vignetteColor,
+    float3 vignetteColor,
     float radius,
     float softness,
     float intensity
@@ -94,7 +94,7 @@ using namespace metal;
     float vignette = smoothstep(radius, radius - softness, dist);
     
     // Blend with vignette color instead of just darkening
-    half3 result = mix(vignetteColor, color.rgb, half(vignette * (1.0 - intensity) + intensity));
+    half3 result = mix(half3(vignetteColor), color.rgb, half(vignette * (1.0 - intensity) + intensity));
     
     return half4(result, color.a);
 }
@@ -106,8 +106,8 @@ using namespace metal;
     float2 position,
     half4 color,
     float2 size,
-    half3 innerColor,
-    half3 outerColor,
+    float3 innerColor,
+    float3 outerColor,
     float radius,
     float softness
 ) {
@@ -117,7 +117,7 @@ using namespace metal;
     
     // Gradient from inner to outer color
     float t = smoothstep(radius - softness, radius + softness, dist);
-    half3 gradient = mix(innerColor, outerColor, half(t));
+    half3 gradient = mix(half3(innerColor), half3(outerColor), half(t));
     
     // Multiply with original color
     half3 result = color.rgb * gradient;

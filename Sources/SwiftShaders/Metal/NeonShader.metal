@@ -40,7 +40,7 @@ static half3 toneMap(half3 color, float exposure) {
 [[stitchable]] half4 neonGlow(
     float2 position,
     half4 color,
-    half3 glowColor,
+    float3 glowColor,
     float intensity,
     float threshold
 ) {
@@ -50,7 +50,7 @@ static half3 toneMap(half3 color, float exposure) {
     float glowAmount = smoothstep(threshold, threshold + 0.3, lum);
     
     // Apply glow color
-    half3 glow = glowColor * half(glowAmount * intensity);
+    half3 glow = half3(glowColor) * half(glowAmount * intensity);
     
     // Combine with original
     half3 result = color.rgb + glow;
@@ -68,7 +68,7 @@ static half3 toneMap(half3 color, float exposure) {
     float2 position,
     SwiftUI::Layer layer,
     float2 size,
-    half3 glowColor,
+    float3 glowColor,
     float glowWidth,
     float intensity
 ) {
@@ -91,14 +91,14 @@ static half3 toneMap(half3 color, float exposure) {
     
     // Only glow on edges
     if (center.a > 0.1 && edge > 0.1) {
-        half3 glow = glowColor * half(edge * intensity);
+        half3 glow = half3(glowColor) * half(edge * intensity);
         return half4(center.rgb + glow, center.a);
     }
     
     // Outer glow for transparent areas near content
     if (center.a < 0.1 && alphaSum > 0.0) {
         float outerGlow = alphaSum / float(samples);
-        return half4(glowColor * half(outerGlow * intensity * 0.5), half(outerGlow * 0.5));
+        return half4(half3(glowColor) * half(outerGlow * intensity * 0.5), half(outerGlow * 0.5));
     }
     
     return center;
@@ -142,8 +142,8 @@ static half3 toneMap(half3 color, float exposure) {
     float2 position,
     SwiftUI::Layer layer,
     float2 size,
-    half3 innerColor,
-    half3 outerColor,
+    float3 innerColor,
+    float3 outerColor,
     float innerRadius,
     float outerRadius,
     float intensity
@@ -160,7 +160,7 @@ static half3 toneMap(half3 color, float exposure) {
         innerGlow += sample.rgb;
     }
     innerGlow /= half(innerSamples);
-    innerGlow *= innerColor;
+    innerGlow *= half3(innerColor);
     
     // Outer glow (far blur)
     half3 outerGlow = half3(0.0);
@@ -172,7 +172,7 @@ static half3 toneMap(half3 color, float exposure) {
         outerGlow += sample.rgb;
     }
     outerGlow /= half(outerSamples);
-    outerGlow *= outerColor;
+    outerGlow *= half3(outerColor);
     
     // Combine
     half3 result = center.rgb + (innerGlow + outerGlow * 0.5) * half(intensity);
@@ -189,8 +189,8 @@ static half3 toneMap(half3 color, float exposure) {
     half4 color,
     float2 size,
     float time,
-    half3 primaryColor,
-    half3 secondaryColor,
+    float3 primaryColor,
+    float3 secondaryColor,
     float flickerSpeed
 ) {
     float2 uv = position / size;
@@ -204,7 +204,7 @@ static half3 toneMap(half3 color, float exposure) {
     
     // Color mixing based on luminance
     float lum = luminance(color.rgb);
-    half3 neonColor = mix(secondaryColor, primaryColor, half(lum));
+    half3 neonColor = mix(half3(secondaryColor), half3(primaryColor), half(lum));
     
     // Apply flicker and intensity
     half3 result = color.rgb * neonColor * half(flicker * 1.5);
@@ -221,17 +221,17 @@ static half3 toneMap(half3 color, float exposure) {
 [[stitchable]] half4 neonTint(
     float2 position,
     half4 color,
-    half3 tintColor,
+    float3 tintColor,
     float intensity
 ) {
     float lum = luminance(color.rgb);
     
     // Tint based on brightness
-    half3 tinted = mix(color.rgb, tintColor * half(lum * 2.0), half(intensity));
+    half3 tinted = mix(color.rgb, half3(tintColor) * half(lum * 2.0), half(intensity));
     
     // Boost bright areas
     if (lum > 0.5) {
-        tinted += tintColor * half((lum - 0.5) * 0.5);
+        tinted += half3(tintColor) * half((lum - 0.5) * 0.5);
     }
     
     return half4(clamp(tinted, half3(0.0), half3(1.0)), color.a);

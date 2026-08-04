@@ -60,6 +60,7 @@ public struct HologramModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.hologram(
+                .boundingRect,
                 .float(time),
                 .float(scanlineIntensity),
                 .float(flickerSpeed),
@@ -93,6 +94,7 @@ public struct GlitchyHologramModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.glitchyHologram(
+                .boundingRect,
                 .float(time),
                 .float(glitchIntensity),
                 .float(noiseAmount)
@@ -125,6 +127,7 @@ public struct WireframeHologramModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.wireframeHologram(
+                .boundingRect,
                 .float(time),
                 .float(gridSize),
                 .float(lineWidth)
@@ -157,6 +160,7 @@ public struct ProjectionHologramModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.projectionHologram(
+                .boundingRect,
                 .float(time),
                 .float(lineSpacing),
                 .float(perspectiveAmount)
@@ -189,6 +193,7 @@ public struct DataStreamHologramModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.dataStreamHologram(
+                .boundingRect,
                 .float(time),
                 .float(streamSpeed),
                 .float(density)
@@ -221,6 +226,7 @@ public struct RetroHologramModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.retroHologram(
+                .boundingRect,
                 .float(time),
                 .float(bandCount),
                 .float(speed)

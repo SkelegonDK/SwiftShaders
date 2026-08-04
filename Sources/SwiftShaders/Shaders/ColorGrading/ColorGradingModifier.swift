@@ -65,6 +65,7 @@ public struct ColorGradingModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.colorGrading(
+                .boundingRect,
                 .float(brightness),
                 .float(contrast),
                 .float(saturation),
@@ -106,6 +107,7 @@ public struct LevelsModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.levels(
+                .boundingRect,
                 .float(inputBlack),
                 .float(inputWhite),
                 .float(gamma),
@@ -140,6 +142,7 @@ public struct CurvesModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.curves(
+                .boundingRect,
                 .float(shadowLift),
                 .float(midtoneContrast),
                 .float(highlightCompress)
@@ -178,6 +181,7 @@ public struct SplitToningModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.splitToning(
+                .boundingRect,
                 .float(shadowHue),
                 .float(shadowSaturation),
                 .float(highlightHue),
@@ -204,7 +208,7 @@ public struct VibranceModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         content.colorEffect(
-            ShaderLibrary.swiftShaders.vibrance(.float(amount))
+            ShaderLibrary.swiftShaders.vibrance(.boundingRect, .float(amount))
         )
     }
 }
@@ -234,6 +238,7 @@ public struct FilmEmulationModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.filmEmulation(
+                .boundingRect,
                 .float(filmType.rawValue),
                 .float(intensity)
             )

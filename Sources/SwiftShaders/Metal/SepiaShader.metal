@@ -218,7 +218,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     half4 color,
     float2 size,
     float fadeAmount,
-    half3 tintColor
+    float3 tintColor
 ) {
     float2 uv = position / size;
     float lum = getLuminance(color.rgb);
@@ -227,7 +227,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     half3 result = mix(half3(lum), color.rgb, half(1.0 - fadeAmount * 0.5));
     
     // Apply color tint
-    result = mix(result, tintColor * half(lum), half(fadeAmount * 0.3));
+    result = mix(result, half3(tintColor) * half(lum), half(fadeAmount * 0.3));
     
     // Lift blacks significantly
     result = max(result, half3(fadeAmount * 0.15));

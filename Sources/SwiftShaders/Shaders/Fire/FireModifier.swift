@@ -59,6 +59,7 @@ public struct FireModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.fire(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(scale),
@@ -95,6 +96,7 @@ public struct TorchFlameModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.torchFlame(
+                .boundingRect,
                 .float(time),
                 .float(flameHeight),
                 .float(flameWidth),
@@ -131,6 +133,7 @@ public struct FireballModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.fireball(
+                .boundingRect,
                 .float(time),
                 .float(center.x),
                 .float(center.y),
@@ -168,6 +171,7 @@ public struct EmbersModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.embers(
+                .boundingRect,
                 .float(time),
                 .float(density),
                 .float(speed),
@@ -204,6 +208,7 @@ public struct LavaModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.colorEffect(
             ShaderLibrary.swiftShaders.lava(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(flowSpeed),

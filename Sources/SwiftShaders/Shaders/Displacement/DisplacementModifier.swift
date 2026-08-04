@@ -67,6 +67,7 @@ public struct SineDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.sineDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(amplitudeX),
                 .float(amplitudeY),
@@ -110,6 +111,7 @@ public struct NoiseDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.noiseDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(amount),
@@ -152,6 +154,7 @@ public struct FBMDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.fbmDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(amount),
@@ -194,6 +197,7 @@ public struct RadialDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.radialDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(amount),
                 .float(frequency),
@@ -237,6 +241,7 @@ public struct SpiralDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.spiralDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(amount),
                 .float(tightness),
@@ -280,6 +285,7 @@ public struct HeatDistortionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.heatDistortion(
+                .boundingRect,
                 .float(time),
                 .float(intensity),
                 .float(riseFactor),
@@ -322,6 +328,7 @@ public struct UnderwaterDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.underwaterDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(waveScale),
                 .float(waveAmount),
@@ -364,6 +371,7 @@ public struct ShockwaveDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.shockwaveDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(center.x),
                 .float(center.y),
@@ -407,6 +415,7 @@ public struct LensDistortionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.lensDistortion(
+                .boundingRect,
                 .float(time),
                 .float(k1),
                 .float(k2),
@@ -450,6 +459,7 @@ public struct FlagWaveModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.flagWave(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(frequency),
@@ -492,6 +502,7 @@ public struct SpherizeModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.spherize(
+                .boundingRect,
                 .float(time),
                 .float(amount),
                 .float(radius),
@@ -535,6 +546,7 @@ public struct TwirlModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.twirl(
+                .boundingRect,
                 .float(time),
                 .float(angle),
                 .float(radius),
@@ -578,6 +590,7 @@ public struct PinchModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.pinch(
+                .boundingRect,
                 .float(time),
                 .float(amount),
                 .float(radius),
@@ -621,6 +634,7 @@ public struct ZigzagModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.zigzag(
+                .boundingRect,
                 .float(time),
                 .float(amplitude),
                 .float(frequency),
@@ -663,6 +677,7 @@ public struct BlobDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.blobDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(scale),
                 .float(amount),
@@ -705,6 +720,7 @@ public struct BreathingDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.breathingDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(amount),
                 .float(speed),
@@ -748,6 +764,7 @@ public struct BlockDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.blockDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(blockSize),
                 .float(amount),
@@ -790,6 +807,7 @@ public struct ScanlineJitterModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.scanlineJitter(
+                .boundingRect,
                 .float(time),
                 .float(lineHeight),
                 .float(jitterAmount),
@@ -832,6 +850,7 @@ public struct WindDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.windDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(strength),
                 .float(gustiness),
@@ -874,6 +893,7 @@ public struct EarthquakeDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.earthquakeDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(magnitude),
                 .float(frequency),
@@ -912,6 +932,7 @@ public struct MagneticDisplacementModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content.distortionEffect(
             ShaderLibrary.swiftShaders.magneticDisplacement(
+                .boundingRect,
                 .float(time),
                 .float(strength),
                 .float(pole.x),

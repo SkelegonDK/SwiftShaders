@@ -192,7 +192,7 @@ static float luminance(half3 color) {
     float2 size,
     float strength,
     float lightAngle,
-    half3 metalColor
+    float3 metalColor
 ) {
     float2 pixelSize = 1.0 / size;
     
@@ -206,7 +206,7 @@ static float luminance(half3 color) {
     float highlight = 0.5 + diff * strength;
     
     // Apply metallic color
-    half3 result = metalColor * half(highlight);
+    half3 result = half3(metalColor * highlight);
     
     // Add specular
     if (highlight > 0.7) {

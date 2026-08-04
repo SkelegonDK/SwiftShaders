@@ -43,7 +43,7 @@ static float hash(float2 p) {
     float2 size,
     float tileSize,
     float groutWidth,
-    half3 groutColor
+    float3 groutColor
 ) {
     // Calculate tile coordinates
     float2 tileCoord = floor(position / tileSize);
@@ -60,7 +60,7 @@ static float hash(float2 p) {
         float edge = min(edgeX, edgeY);
         
         if (edge < groutWidth) {
-            color.rgb = groutColor;
+            color.rgb = half3(groutColor);
         }
     }
     
@@ -76,7 +76,7 @@ static float hash(float2 p) {
     float2 size,
     float hexSize,
     float groutWidth,
-    half3 groutColor
+    float3 groutColor
 ) {
     float sqrt3 = 1.732050808;
     
@@ -101,7 +101,7 @@ static float hash(float2 p) {
         float edge = 0.5 - dist;
         
         if (edge * hexSize < groutWidth) {
-            color.rgb = groutColor;
+            color.rgb = half3(groutColor);
         }
     }
     
@@ -117,7 +117,7 @@ static float hash(float2 p) {
     float2 size,
     float cellSize,
     float groutWidth,
-    half3 groutColor,
+    float3 groutColor,
     float randomness
 ) {
     float2 uv = position / cellSize;
@@ -154,7 +154,7 @@ static float hash(float2 p) {
     if (groutWidth > 0.0) {
         float edge = secondDist - minDist;
         if (edge < groutWidth / cellSize) {
-            color.rgb = groutColor;
+            color.rgb = half3(groutColor);
         }
     }
     
@@ -171,7 +171,7 @@ static float hash(float2 p) {
     float brickWidth,
     float brickHeight,
     float groutWidth,
-    half3 groutColor
+    float3 groutColor
 ) {
     // Offset every other row
     float row = floor(position.y / brickHeight);
@@ -193,7 +193,7 @@ static float hash(float2 p) {
         float edge = min(edgeX, edgeY);
         
         if (edge < groutWidth) {
-            color.rgb = groutColor;
+            color.rgb = half3(groutColor);
         }
     }
     
@@ -209,7 +209,7 @@ static float hash(float2 p) {
     float2 size,
     float diamondSize,
     float groutWidth,
-    half3 groutColor
+    float3 groutColor
 ) {
     // Rotate 45 degrees
     float c = 0.707107; // cos(45°)
@@ -239,7 +239,7 @@ static float hash(float2 p) {
         float edge = min(edgeX, edgeY);
         
         if (edge < groutWidth) {
-            color.rgb = groutColor;
+            color.rgb = half3(groutColor);
         }
     }
     

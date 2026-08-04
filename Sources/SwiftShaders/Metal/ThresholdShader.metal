@@ -41,11 +41,11 @@ constant float bayerMatrix[16] = {
     float2 position,
     half4 color,
     float threshold,
-    half3 lowColor,
-    half3 highColor
+    float3 lowColor,
+    float3 highColor
 ) {
     float lum = getLuminance(color.rgb);
-    half3 result = (lum > threshold) ? highColor : lowColor;
+    half3 result = (lum > threshold) ? half3(highColor) : half3(lowColor);
     return half4(result, color.a);
 }
 
@@ -56,8 +56,8 @@ constant float bayerMatrix[16] = {
     float2 position,
     half4 color,
     float threshold,
-    half3 lowColor,
-    half3 highColor
+    float3 lowColor,
+    float3 highColor
 ) {
     float lum = getLuminance(color.rgb);
     
@@ -69,7 +69,7 @@ constant float bayerMatrix[16] = {
     // Apply dithered threshold
     float adjustedThreshold = threshold + (dither - 0.5) * 0.25;
     
-    half3 result = (lum > adjustedThreshold) ? highColor : lowColor;
+    half3 result = (lum > adjustedThreshold) ? half3(highColor) : half3(lowColor);
     return half4(result, color.a);
 }
 
@@ -80,7 +80,7 @@ constant float bayerMatrix[16] = {
     float2 position,
     half4 color,
     float levels,
-    half3 tintColor
+    float3 tintColor
 ) {
     float lum = getLuminance(color.rgb);
     
@@ -88,7 +88,7 @@ constant float bayerMatrix[16] = {
     float quantized = floor(lum * levels) / (levels - 1.0);
     
     // Apply tint
-    half3 result = tintColor * half(quantized);
+    half3 result = half3(tintColor) * half(quantized);
     
     return half4(result, color.a);
 }
@@ -119,15 +119,15 @@ constant float bayerMatrix[16] = {
     half4 color,
     float threshold,
     float softness,
-    half3 lowColor,
-    half3 highColor
+    float3 lowColor,
+    float3 highColor
 ) {
     float lum = getLuminance(color.rgb);
     
     // Smooth transition
     float t = smoothstep(threshold - softness, threshold + softness, lum);
     
-    half3 result = mix(lowColor, highColor, half(t));
+    half3 result = mix(half3(lowColor), half3(highColor), half(t));
     
     return half4(result, color.a);
 }
@@ -163,15 +163,15 @@ constant float bayerMatrix[16] = {
     float time,
     float speed,
     float amplitude,
-    half3 lowColor,
-    half3 highColor
+    float3 lowColor,
+    float3 highColor
 ) {
     float lum = getLuminance(color.rgb);
     
     // Animated threshold
     float animatedThreshold = 0.5 + sin(time * speed) * amplitude;
     
-    half3 result = (lum > animatedThreshold) ? highColor : lowColor;
+    half3 result = (lum > animatedThreshold) ? half3(highColor) : half3(lowColor);
     
     return half4(result, color.a);
 }
@@ -215,8 +215,8 @@ constant float bayerMatrix[16] = {
     float2 position,
     half4 color,
     float threshold,
-    half3 edgeColor,
-    half3 fillColor
+    float3 edgeColor,
+    float3 fillColor
 ) {
     // Use derivatives to detect edges
     float lum = getLuminance(color.rgb);
@@ -224,10 +224,10 @@ constant float bayerMatrix[16] = {
     
     // Threshold edges
     if (edge > threshold) {
-        return half4(edgeColor, color.a);
+        return half4(half3(edgeColor), color.a);
     }
     
-    return half4(fillColor, color.a);
+    return half4(half3(fillColor), color.a);
 }
 
 // =============================================================================
@@ -239,8 +239,8 @@ constant float bayerMatrix[16] = {
     float2 size,
     float threshold,
     float noiseAmount,
-    half3 lowColor,
-    half3 highColor
+    float3 lowColor,
+    float3 highColor
 ) {
     float2 uv = position / size;
     
@@ -250,7 +250,7 @@ constant float bayerMatrix[16] = {
     float lum = getLuminance(color.rgb);
     float noisyThreshold = threshold + (noise - 0.5) * noiseAmount;
     
-    half3 result = (lum > noisyThreshold) ? highColor : lowColor;
+    half3 result = (lum > noisyThreshold) ? half3(highColor) : half3(lowColor);
     
     return half4(result, color.a);
 }
@@ -263,19 +263,19 @@ constant float bayerMatrix[16] = {
     half4 color,
     float threshold1,
     float threshold2,
-    half3 darkColor,
-    half3 midColor,
-    half3 lightColor
+    float3 darkColor,
+    float3 midColor,
+    float3 lightColor
 ) {
     float lum = getLuminance(color.rgb);
     
     half3 result;
     if (lum < threshold1) {
-        result = darkColor;
+        result = half3(darkColor);
     } else if (lum < threshold2) {
-        result = midColor;
+        result = half3(midColor);
     } else {
-        result = lightColor;
+        result = half3(lightColor);
     }
     
     return half4(result, color.a);
