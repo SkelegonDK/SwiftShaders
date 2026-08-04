@@ -20,6 +20,11 @@ DerivedData/
 Packages/
 Package.resolved
 
+# Generated Metal library. Built by Scripts/build-shaders.sh from
+# Sources/SwiftShaders/Metal/*.metal — never edited by hand, never committed.
+# CI regenerates it; `make build` and `make test` depend on it.
+Sources/SwiftShaders/Resources/*.metallib
+
 # CocoaPods
 Pods/
 

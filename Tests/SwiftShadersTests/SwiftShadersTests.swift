@@ -8,19 +8,19 @@ final class SwiftShadersTests: XCTestCase {
     // MARK: - ShaderLibrary Tests
     
     func testShaderLibrarySingleton() {
-        let library1 = ShaderLibrary.shared
-        let library2 = ShaderLibrary.shared
+        let library1 = ShaderCatalog.shared
+        let library2 = ShaderCatalog.shared
         XCTAssertTrue(library1 === library2)
     }
     
     func testShaderLibraryCount() {
-        let library = ShaderLibrary.shared
+        let library = ShaderCatalog.shared
         XCTAssertGreaterThan(library.count, 0)
         XCTAssertGreaterThanOrEqual(library.count, 30)
     }
     
     func testShaderCategories() {
-        let library = ShaderLibrary.shared
+        let library = ShaderCatalog.shared
         
         XCTAssertFalse(library.distortionShaders.isEmpty)
         XCTAssertFalse(library.colorShaders.isEmpty)
@@ -29,7 +29,7 @@ final class SwiftShadersTests: XCTestCase {
     }
     
     func testShaderLookup() {
-        let library = ShaderLibrary.shared
+        let library = ShaderCatalog.shared
         
         let ripple = library.shader(named: "ripple")
         XCTAssertNotNil(ripple)
@@ -40,7 +40,7 @@ final class SwiftShadersTests: XCTestCase {
     }
     
     func testShaderInfo() {
-        let info = ShaderLibrary.ShaderInfo(
+        let info = ShaderCatalog.ShaderInfo(
             id: "test",
             name: "Test Shader",
             description: "A test shader",
