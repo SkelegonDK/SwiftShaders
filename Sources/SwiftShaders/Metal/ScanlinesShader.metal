@@ -4,6 +4,7 @@
 // License: MIT
 
 #include <metal_stdlib>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================

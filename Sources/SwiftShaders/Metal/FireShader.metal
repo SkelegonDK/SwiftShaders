@@ -1,24 +1,10 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Fire Effect Shader
 // Procedural fire generation using noise and color mapping.
-
-/// Noise function for fire turbulence.
-static float fireNoise(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    
-    float n = i.x + i.y * 57.0;
-    float a = fract(sin(n) * 43758.5453);
-    float b = fract(sin(n + 1.0) * 43758.5453);
-    float c = fract(sin(n + 57.0) * 43758.5453);
-    float d = fract(sin(n + 58.0) * 43758.5453);
-    
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
 
 /// Fractal noise for realistic flames.
 static float fireFBM(float2 p, int octaves) {
@@ -27,7 +13,7 @@ static float fireFBM(float2 p, int octaves) {
     float frequency = 1.0;
     
     for (int i = 0; i < octaves; i++) {
-        value += fireNoise(p * frequency) * amplitude;
+        value += valueNoiseLattice(p * frequency) * amplitude;
         amplitude *= 0.5;
         frequency *= 2.0;
     }
@@ -105,8 +91,8 @@ half4 torchFlame(
     delta.y /= flameHeight;
     
     // Animated distortion
-    float noise1 = fireNoise(float2(uv.x * 8.0, time * flickerSpeed));
-    float noise2 = fireNoise(float2(uv.x * 12.0 + 100.0, time * flickerSpeed * 1.3));
+    float noise1 = valueNoiseLattice(float2(uv.x * 8.0, time * flickerSpeed));
+    float noise2 = valueNoiseLattice(float2(uv.x * 12.0 + 100.0, time * flickerSpeed * 1.3));
     
     delta.x += (noise1 - 0.5) * 0.3 * (1.0 - uv.y);
     

@@ -5,6 +5,7 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -29,11 +30,6 @@ constant float3x3 sobelY = float3x3(
     float3( 0.0,  0.0,  0.0),
     float3( 1.0,  2.0,  1.0)
 );
-
-// Convert to grayscale
-static float luminance(half3 color) {
-    return dot(float3(color), float3(0.299, 0.587, 0.114));
-}
 
 // =============================================================================
 // LAYER EFFECT: Classic Emboss

@@ -5,6 +5,7 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -17,11 +18,6 @@ using namespace metal;
 // 4. Additive blending for light bleeding
 // 5. Color saturation boost
 // =============================================================================
-
-// Luminance calculation
-static float luminance(half3 color) {
-    return dot(float3(color), float3(0.299, 0.587, 0.114));
-}
 
 // HDR tone mapping
 static half3 toneMap(half3 color, float exposure) {

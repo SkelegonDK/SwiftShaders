@@ -1,14 +1,10 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Blur Effect Shaders
 // Provides various blur algorithms for image softening effects.
-
-/// Gaussian weight calculation.
-static float gaussianWeight(float x, float sigma) {
-    return exp(-(x * x) / (2.0 * sigma * sigma)) / (sqrt(2.0 * 3.14159) * sigma);
-}
 
 /// Box blur approximation using color effect.
 /// Note: True blur requires layerEffect, this simulates the look.

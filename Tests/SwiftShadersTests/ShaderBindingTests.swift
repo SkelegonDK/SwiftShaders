@@ -468,16 +468,25 @@ final class ShaderBindingTests: XCTestCase {
 
         // The recorded paths are absolute and belong to the machine that built
         // the metallib, so sources are matched by file name.
+        //
+        // `.h` is checked alongside `.metal`: SwiftShadersCommon.h defines the
+        // hashes, luminance and value noise that most shaders are built from, so
+        // an edit to it that never reached the metallib is exactly as invisible
+        // as an edit to a `.metal` file.
+        let sourceExtensions: Set<String> = ["metal", "h"]
+
         var recovered: [String: URL] = [:]
         let walk = FileManager.default.enumerator(at: extracted, includingPropertiesForKeys: nil)
         while let url = walk?.nextObject() as? URL {
-            if url.pathExtension == "metal" { recovered[url.lastPathComponent] = url }
+            if sourceExtensions.contains(url.pathExtension) {
+                recovered[url.lastPathComponent] = url
+            }
         }
 
         let metalDirectory = root.appendingPathComponent("Sources/SwiftShaders/Metal")
         let onDisk = try FileManager.default
             .contentsOfDirectory(at: metalDirectory, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "metal" }
+            .filter { sourceExtensions.contains($0.pathExtension) }
 
         for source in onDisk.sorted(by: { $0.path < $1.path }) {
             let name = source.lastPathComponent

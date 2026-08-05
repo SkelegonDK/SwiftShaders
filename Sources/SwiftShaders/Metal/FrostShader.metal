@@ -5,6 +5,7 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -18,26 +19,6 @@ using namespace metal;
 // 5. Creating refraction-like displacement
 // =============================================================================
 
-// Simple hash function for noise generation
-static float hash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
-}
-
-// 2D noise function
-static float noise2D(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    
-    float a = hash(i);
-    float b = hash(i + float2(1.0, 0.0));
-    float c = hash(i + float2(0.0, 1.0));
-    float d = hash(i + float2(1.0, 1.0));
-    
-    float2 u = f * f * (3.0 - 2.0 * f);
-    
-    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-}
-
 // Worley noise for crystal patterns
 static float worley(float2 p, float scale) {
     float2 n = floor(p * scale);
@@ -48,7 +29,7 @@ static float worley(float2 p, float scale) {
     for (int y = -1; y <= 1; y++) {
         for (int x = -1; x <= 1; x++) {
             float2 neighbor = float2(x, y);
-            float2 point = hash(n + neighbor) * 0.5 + 0.5;
+            float2 point = hashSine2D(n + neighbor) * 0.5 + 0.5;
             float2 diff = neighbor + point - f;
             float dist = length(diff);
             minDist = min(minDist, dist);
@@ -79,15 +60,15 @@ static float worley(float2 p, float scale) {
     
     // Generate frost pattern
     float frost = worley(uv, crystalScale);
-    float noise = noise2D(uv * crystalScale * 2.0);
+    float noise = valueNoise2D(uv * crystalScale * 2.0);
     
     // Combine patterns
     float pattern = frost * 0.7 + noise * 0.3;
     
     // Distortion based on frost
     float2 distortion = float2(
-        noise2D(uv * crystalScale + 100.0) - 0.5,
-        noise2D(uv * crystalScale + 200.0) - 0.5
+        valueNoise2D(uv * crystalScale + 100.0) - 0.5,
+        valueNoise2D(uv * crystalScale + 200.0) - 0.5
     ) * frostAmount * blurAmount;
     
     // Sample with distortion (simulated blur)
@@ -140,7 +121,7 @@ static float worley(float2 p, float scale) {
     half3 result = mix(color.rgb, iceColor, half(pattern * 0.3));
     
     // Add sparkles
-    float sparkle = step(0.97, hash(uv * 100.0 + floor(time * 10.0)));
+    float sparkle = step(0.97, hashSine2D(uv * 100.0 + floor(time * 10.0)));
     result += half3(sparkle * shimmer);
     
     return half4(result, color.a);
@@ -209,7 +190,7 @@ static float worley(float2 p, float scale) {
     float breath = smoothstep(breathSize, breathSize * 0.3, dist);
     
     // Frost pattern within breath
-    float frost = noise2D(uv * 30.0) * 0.5 + 0.5;
+    float frost = valueNoise2D(uv * 30.0) * 0.5 + 0.5;
     
     // Combine
     float frostAmount = breath * frost * (1.0 - fadeAmount);
@@ -240,7 +221,7 @@ static float worley(float2 p, float scale) {
     cracks = smoothstep(0.0, 0.1, cracks);
     
     // Ice surface texture
-    float surface = noise2D(uv * crackDensity * 2.0);
+    float surface = valueNoise2D(uv * crackDensity * 2.0);
     
     // Base ice color
     half3 iceBase = half3(0.85, 0.92, 1.0);

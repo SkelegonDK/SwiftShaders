@@ -1,5 +1,6 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Voronoi Noise Shader
@@ -7,15 +8,6 @@ using namespace metal;
 // organic, and crystalline visual effects.
 
 // MARK: - Hash Functions
-
-/// High-quality 2D hash function for point generation.
-static float2 voronoiHash2(float2 p) {
-    p = float2(
-        dot(p, float2(127.1, 311.7)),
-        dot(p, float2(269.5, 183.3))
-    );
-    return fract(sin(p) * 43758.5453123);
-}
 
 /// 3D hash for animated voronoi cells.
 static float2 voronoiHash2Animated(float2 p, float time) {
@@ -25,11 +17,6 @@ static float2 voronoiHash2Animated(float2 p, float time) {
     );
     float2 hash = fract(sin(p) * 43758.5453123);
     return sin(hash * 6.2831853 + time) * 0.5 + 0.5;
-}
-
-/// Simple hash for randomization.
-static float voronoiHash1(float2 p) {
-    return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
 }
 
 // MARK: - Core Voronoi Functions
@@ -163,9 +150,9 @@ half4 voronoiCells(
     
     // Generate cell color from ID
     float3 cellColor = float3(
-        voronoiHash1(cellID),
-        voronoiHash1(cellID + 127.0),
-        voronoiHash1(cellID + 311.0)
+        hashSine2DAlternateSeed(cellID),
+        hashSine2DAlternateSeed(cellID + 127.0),
+        hashSine2DAlternateSeed(cellID + 311.0)
     );
     
     // Apply color variation
@@ -281,14 +268,14 @@ half4 voronoiShattered(
     
     // Fragment shading based on cell
     float3 voronoi = voronoiWithID(uv, scale, 0.0, 1.0);
-    float shade = voronoiHash1(voronoi.yz);
+    float shade = hashSine2DAlternateSeed(voronoi.yz);
     shade = shade * 0.3 + 0.7;
     
     // Apply subtle offset per shard (displacement feel)
     float3 shardTint = float3(
-        voronoiHash1(voronoi.yz + 0.0),
-        voronoiHash1(voronoi.yz + 1.0),
-        voronoiHash1(voronoi.yz + 2.0)
+        hashSine2DAlternateSeed(voronoi.yz + 0.0),
+        hashSine2DAlternateSeed(voronoi.yz + 1.0),
+        hashSine2DAlternateSeed(voronoi.yz + 2.0)
     ) * 0.2 + 0.9;
     
     half4 result = color;
@@ -389,7 +376,7 @@ float2 voronoiDistort(
     float2 distances = voronoiF1F2(uv, scale, time * 0.3, 1.0);
     
     // Direction towards cell center
-    float angle = voronoiHash1(floor(uv * scale)) * 6.28318;
+    float angle = hashSine2DAlternateSeed(floor(uv * scale)) * 6.28318;
     float2 dir = float2(cos(angle), sin(angle));
     
     // Distort based on edge proximity
@@ -559,7 +546,7 @@ half4 voronoiStainedGlass(
     float lead = smoothstep(leadWidth, leadWidth * 0.3, distances.y - distances.x);
     
     // Unique color per glass pane
-    float hue = voronoiHash1(cellID) * 6.28318;
+    float hue = hashSine2DAlternateSeed(cellID) * 6.28318;
     float3 paneColor = float3(
         sin(hue) * 0.5 + 0.5,
         sin(hue + 2.094) * 0.5 + 0.5,
@@ -617,7 +604,7 @@ half4 voronoiFrost(
     result.rgb *= half(1.0 - crack * 0.5 - microCrack);
     
     // Subtle sparkle
-    float sparkle = voronoiHash1(floor(uv * scale * 10.0) + floor(time * 5.0));
+    float sparkle = hashSine2DAlternateSeed(floor(uv * scale * 10.0) + floor(time * 5.0));
     sparkle = step(0.995, sparkle);
     result.rgb += half3(sparkle * 0.8);
     

@@ -1,28 +1,10 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Dissolve Transition Shader
 // Creates various dissolve effects for view transitions.
-
-/// Hash function for dissolve patterns.
-static float dissolveHash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453123);
-}
-
-/// Value noise for smooth dissolve.
-static float dissolveNoise(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    
-    float a = dissolveHash(i);
-    float b = dissolveHash(i + float2(1.0, 0.0));
-    float c = dissolveHash(i + float2(0.0, 1.0));
-    float d = dissolveHash(i + float2(1.0, 1.0));
-    
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
 
 /// Basic noise dissolve effect.
 /// Reveals/hides based on noise threshold.
@@ -38,7 +20,7 @@ half4 dissolve(
     float2 uv = position / bounds.zw;
     
     // Generate noise pattern
-    float noise = dissolveNoise(uv * scale);
+    float noise = valueNoise2DExtended(uv * scale);
     
     // Calculate dissolve threshold
     float threshold = progress;
@@ -79,7 +61,7 @@ half4 directionalDissolve(
     float projected = dot(uv - 0.5, dir) + 0.5;
     
     // Add some noise for organic edge
-    float noise = dissolveNoise(uv * 20.0) * 0.1;
+    float noise = valueNoise2DExtended(uv * 20.0) * 0.1;
     projected += noise;
     
     // Dissolve based on progress
@@ -113,7 +95,7 @@ half4 radialDissolve(
     float dist = length(uv - center) * 1.414; // Normalize to 0-1
     
     // Add noise for organic edge
-    float noise = dissolveNoise(uv * 30.0) * 0.1;
+    float noise = valueNoise2DExtended(uv * 30.0) * 0.1;
     dist += noise;
     
     float threshold = progress;
@@ -146,7 +128,7 @@ half4 burnDissolve(
     float freq = scale;
     
     for (int i = 0; i < 4; i++) {
-        noise += dissolveNoise(uv * freq) * amp;
+        noise += valueNoise2DExtended(uv * freq) * amp;
         amp *= 0.5;
         freq *= 2.0;
     }
@@ -189,7 +171,7 @@ half4 pixelDissolve(
     float2 pixelUV = floor(uv / pixelSize) * pixelSize;
     
     // Noise per pixel block
-    float noise = dissolveHash(pixelUV * 100.0);
+    float noise = hashSine2DExtended(pixelUV * 100.0);
     
     if (noise < progress) {
         return half4(0.0h, 0.0h, 0.0h, 0.0h);
@@ -215,8 +197,8 @@ half4 scatterDissolve(
     float2 localUV = fract(uv / particleSize);
     
     // Random values per particle
-    float randomPhase = dissolveHash(grid);
-    float randomAngle = dissolveHash(grid + 100.0) * 6.28318;
+    float randomPhase = hashSine2DExtended(grid);
+    float randomAngle = hashSine2DExtended(grid + 100.0) * 6.28318;
     
     // Dissolve timing per particle
     float particleProgress = smoothstep(randomPhase - 0.1, randomPhase + 0.1, progress);

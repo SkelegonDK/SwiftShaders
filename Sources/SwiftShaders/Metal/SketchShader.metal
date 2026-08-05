@@ -5,6 +5,7 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -16,27 +17,6 @@ using namespace metal;
 // 3. Paper texture overlay
 // 4. Line wobble for hand-drawn feel
 // =============================================================================
-
-// Hash functions for noise
-static float hash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
-}
-
-static float noise(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    float a = hash(i);
-    float b = hash(i + float2(1.0, 0.0));
-    float c = hash(i + float2(0.0, 1.0));
-    float d = hash(i + float2(1.0, 1.0));
-    float2 u = f * f * (3.0 - 2.0 * f);
-    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-}
-
-// Get luminance
-static float luminance(half3 color) {
-    return dot(float3(color), float3(0.299, 0.587, 0.114));
-}
 
 // =============================================================================
 // LAYER EFFECT: Pencil Sketch
@@ -79,7 +59,7 @@ static float luminance(half3 color) {
     float edge = sqrt(gx * gx + gy * gy);
     
     // Paper texture
-    float paperNoise = noise(position * 0.5) * 0.1;
+    float paperNoise = valueNoise2D(position * 0.5) * 0.1;
     
     // Combine
     float stroke = edge * lineIntensity;
@@ -191,8 +171,8 @@ static float luminance(half3 color) {
     
     // Smudged sampling
     float2 smudgeOffset = float2(
-        noise(position * 0.1) - 0.5,
-        noise(position * 0.1 + 100.0) - 0.5
+        valueNoise2D(position * 0.1) - 0.5,
+        valueNoise2D(position * 0.1 + 100.0) - 0.5
     ) * smudgeAmount;
     
     half4 smudged = layer.sample(position + smudgeOffset);
@@ -200,7 +180,7 @@ static float luminance(half3 color) {
     lum = mix(lum, smudgedLum, 0.3);
     
     // Grainy texture
-    float grain = noise(position * 2.0) * 0.3;
+    float grain = valueNoise2D(position * 2.0) * 0.3;
     
     // Charcoal darkness
     float darkness = (1.0 - lum) + grain * (1.0 - lum);
@@ -248,8 +228,8 @@ static float luminance(half3 color) {
     float total = 0.0;
     
     for (int i = 0; i < 8; i++) {
-        float angle = float(i) * 0.785398 + noise(position * 0.01) * 0.5;
-        float dist = (noise(position * 0.1 + float(i) * 10.0) + 0.5) * bleedAmount;
+        float angle = float(i) * 0.785398 + valueNoise2D(position * 0.01) * 0.5;
+        float dist = (valueNoise2D(position * 0.1 + float(i) * 10.0) + 0.5) * bleedAmount;
         
         float2 offset = float2(cos(angle), sin(angle)) * dist;
         half4 sample = layer.sample(position + offset);
