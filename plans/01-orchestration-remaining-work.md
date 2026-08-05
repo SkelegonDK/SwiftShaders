@@ -67,6 +67,22 @@ Stage 0 ──► ADV-1 ──► A (7a) ──► B (7b) ──► ADV-2 ──
 
 C and D run concurrently with ADV‑1/A/B and merge at the ADV‑2 gate.
 
+## ADV‑1 amendments (adopted 2026-08-05)
+
+The adversarial review broke or amended most of the assumptions below. Adopted changes:
+
+1. **"Faithful" redefined**: no phantom gallery entries (already true — lock it) + a checked-in **coverage ledger** mapping every public `View` method to `.inGallery` / `.presetOf(...)` / `.deliberatelyAbsent(reason)`, with a ratchet test (the absent count may only fall). Full gallery coverage (130 missing entries, ~352 hand-authored param ranges) is a visible backlog, **not** 7a's exit criterion.
+2. **Gallery becomes importable**: new `SwiftShadersGalleryCore` library target (Effect.swift, EffectCatalog.swift, SampleElements.swift) + thin executable, so tests *import* the catalog instead of text-parsing it. Catalog stays hand-curated; fidelity enforced by tests, not codegen. Avoid a second "descriptor" type — `ShaderBinding.Descriptor` already owns that word.
+3. **`ShaderCatalog`'s 30-row registry is 63% phantom** (19 ids match no public View method; `gaussianBlur` matches no Metal function) → delete the registry, move its 5 stray `View` methods next to their modifiers.
+4. **7c rescoped**: dedupe only provably output-preserving duplicates (`luminance`/`getLuminance` 6→1, noise *interpolation* — algebraically identical, measured max divergence 1.8e-07). The real divergence is **two hash constants** (`43758.5453` vs `43758.5453123`) — keep both as distinctly named helpers. Descope 2D-rotation extraction (inline expressions, no named-function benefit).
+5. **Unused-variable warnings are latent bugs, not lint**: e.g. `directionalChromatic` ignores its `angle` parameter entirely; `polaroid` never reads `size` (making Phase 5's "deliberate rendering change" a no-op). Delete only unused *functions*; file the 13 unused *variables* as a triage ledger. Extend the drift-check filter to `.h`.
+6. **7b is a rendering bug, not a style cleanup**: `Float(7.8e8)` has ulp 64s, so every `timeIntervalSinceReferenceDate` → `.float(time)` path renders *frozen* animation (the Gallery's own clock is fine — the fidelity gap runs opposite to 7a's). Acceptance: a two-timestamp ImageRenderer test, red today, green after.
+7. **A and B run in parallel** (measured region gap ≥13 lines in all 15 shared files) under constraints: B changes no public signature and never touches `Sources/SwiftShadersGallery/`; A owns Effect.swift/EffectCatalog.swift/Package.swift/View-extension regions.
+8. **Duplicate names**: only `voronoiNoise` is genuinely ambiguous (both overloads accept `(time:scale:)`; the compiler silently picks the Noise shader over the Voronoi one). Fix that one; add a duplicate-name ratchet test for the other four. No mass renames.
+9. **The 49 unreferenced Metal functions stay**, but become a generated inventory file (they are the cheapest future gallery entries).
+10. **Stage 4**: replace the manual gallery spot-check with a headless render sweep over all catalog entries (each must differ from its unshaded control); next release is **2.0.0** (public API was removed); podspec deleted (Track D confirmed independently: CocoaPods build was impossible — no `Bundle.module`).
+11. Correction to the base plan: there is no `muhittinpalamutcu` org typo in the tree; the CHANGELOG's links point at the right org but the wrong repo (SwiftRouter).
+
 ## Assumptions for ADV‑1 to attack
 
 1. Descriptor direction: descriptor is authored in the library; Gallery catalog is *derived*. (Alternative: gallery stays hand-curated and a test enforces consistency.)
