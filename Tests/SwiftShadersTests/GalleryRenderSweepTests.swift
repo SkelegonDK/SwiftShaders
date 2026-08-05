@@ -308,6 +308,12 @@ final class GalleryRenderSweepTests: XCTestCase {
 
         /// Every sampled pixel the same — a solid rectangle, transparent or not.
         /// This is what a shader reading shifted arguments produces.
+        ///
+        /// Alpha counts: a render that is black everywhere but keeps a varying
+        /// alpha is a different picture, not a swallowed view. (Learned from a
+        /// negative control: `.brightness(-1)` blacks out the colour and leaves
+        /// the effect's alpha alone, so it is not flat and was not caught.
+        /// `.overlay(Color.black)`, which is opaque, is.)
         var isFlat: Bool {
             let first = colour(x: 0, y: 0)
             return probes.allSatisfy { colour(x: $0.x, y: $0.y).isClose(to: first) }
