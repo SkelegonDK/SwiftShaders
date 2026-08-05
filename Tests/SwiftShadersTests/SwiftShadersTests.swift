@@ -5,40 +5,12 @@ import SwiftUI
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 final class SwiftShadersTests: XCTestCase {
     
-    // MARK: - ShaderLibrary Tests
-    
-    func testShaderLibrarySingleton() {
-        let library1 = ShaderCatalog.shared
-        let library2 = ShaderCatalog.shared
-        XCTAssertTrue(library1 === library2)
-    }
-    
-    func testShaderLibraryCount() {
-        let library = ShaderCatalog.shared
-        XCTAssertGreaterThan(library.count, 0)
-        XCTAssertGreaterThanOrEqual(library.count, 30)
-    }
-    
-    func testShaderCategories() {
-        let library = ShaderCatalog.shared
-        
-        XCTAssertFalse(library.distortionShaders.isEmpty)
-        XCTAssertFalse(library.colorShaders.isEmpty)
-        XCTAssertFalse(library.particleShaders.isEmpty)
-        XCTAssertFalse(library.transitionShaders.isEmpty)
-    }
-    
-    func testShaderLookup() {
-        let library = ShaderCatalog.shared
-        
-        let ripple = library.shader(named: "ripple")
-        XCTAssertNotNil(ripple)
-        XCTAssertEqual(ripple?.name, "Ripple")
-        
-        let nonExistent = library.shader(named: "nonexistent")
-        XCTAssertNil(nonExistent)
-    }
-    
+    // The four `ShaderCatalog` tests that stood here are gone with the registry
+    // they exercised (Phase 7a). They asserted that a hand-written list of 30
+    // rows had 30 rows — 19 of which named no public effect and one (`gaussianBlur`)
+    // no Metal function. `EffectCoverageLedger` and its scanner replace them with
+    // a claim that can be wrong: every public effect method is accounted for.
+
     // MARK: - ShaderConfiguration Tests
     
     func testShaderConfigurationDefaults() {

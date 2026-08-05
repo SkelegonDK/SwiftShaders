@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The UI elements an effect can be previewed on.
-enum SampleElement: String, CaseIterable, Identifiable {
+public enum SampleElement: String, CaseIterable, Identifiable, Sendable {
     case card = "Card"
     case button = "Button"
     case text = "Text"
@@ -9,9 +9,9 @@ enum SampleElement: String, CaseIterable, Identifiable {
     case photo = "Photo"
     case list = "List"
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var symbol: String {
+    public var symbol: String {
         switch self {
         case .card: "rectangle.on.rectangle"
         case .button: "capsule"
@@ -23,7 +23,7 @@ enum SampleElement: String, CaseIterable, Identifiable {
     }
 
     @ViewBuilder
-    var view: some View {
+    public var view: some View {
         switch self {
         case .card: SampleCard()
         case .button: SampleButton()

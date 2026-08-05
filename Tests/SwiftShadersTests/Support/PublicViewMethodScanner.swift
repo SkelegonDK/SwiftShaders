@@ -1,0 +1,243 @@
+import Foundation
+
+/// One `func` declared in a `public extension View` block in `Sources/`.
+struct PublicViewMethod: Equatable, Comparable, CustomStringConvertible {
+    /// Name plus argument labels, e.g. `vignette(radius:softness:intensity:)`.
+    /// This is the identity an effect actually has: four of the library's method
+    /// *names* are declared twice, in different files, and only the labels tell
+    /// them apart.
+    let selector: String
+    let name: String
+    /// Repository-relative, so failure messages are clickable.
+    let file: String
+    let line: Int
+    /// One per parameter, in order. `_` for an unlabelled parameter.
+    let labels: [String]
+    /// Indices of the parameters that have a default value, and may therefore be
+    /// left out at a call site.
+    let defaultedParameters: Set<Int>
+
+    var description: String { "\(file):\(line) \(selector)" }
+
+    /// Every argument-label list a caller can write for this method.
+    ///
+    /// A defaulted parameter may be omitted independently of the others — Swift
+    /// does not require the omissions to be trailing — so this is the power set
+    /// of the defaulted positions. It is what makes two overloads of one name
+    /// *ambiguous* rather than merely similarly named: overlapping shapes mean a
+    /// call that both could serve, resolved by a tiebreaker the caller never
+    /// sees.
+    var acceptedCallShapes: Set<[String]> {
+        var shapes: Set<[String]> = []
+        let optional = defaultedParameters.sorted()
+        for mask in 0..<(1 << optional.count) {
+            var omitted: Set<Int> = []
+            for (bit, index) in optional.enumerated() where mask & (1 << bit) != 0 {
+                omitted.insert(index)
+            }
+            shapes.insert(labels.indices.filter { !omitted.contains($0) }.map { labels[$0] })
+        }
+        return shapes
+    }
+
+    static func < (lhs: PublicViewMethod, rhs: PublicViewMethod) -> Bool {
+        (lhs.selector, lhs.file, lhs.line) < (rhs.selector, rhs.file, rhs.line)
+    }
+}
+
+/// Finds every public `View` effect method in the library sources.
+///
+/// The public surface of SwiftShaders *is* this set of methods: there is no
+/// registry to enumerate, and nothing at runtime can list them, because they are
+/// static extension members. Reading the sources is the only way to get the list
+/// the coverage ledger has to account for — the same reason
+/// `ShaderCallSiteScanner` exists.
+///
+/// The scanner must not derive its answer the way the thing it guards does, or
+/// the guard is worthless (Phase 6's lesson). So it is paired with
+/// ``rawDeclarationCount(source:file:)``, which counts declarations by line
+/// shape alone, with no brace matching and no knowledge of extension blocks; the
+/// tests assert the two agree.
+enum PublicViewMethodScanner {
+
+    // MARK: - Scanning the repository
+
+    static func scanSources() throws -> [PublicViewMethod] {
+        try swiftFiles().flatMap { url -> [PublicViewMethod] in
+            let relative = url.path.replacingOccurrences(
+                of: ShaderCallSiteScanner.repositoryRoot.path + "/", with: ""
+            )
+            return scan(source: try String(contentsOf: url, encoding: .utf8), file: relative)
+        }
+        .sorted()
+    }
+
+    /// The raw yardstick over the same files. See ``rawDeclarationCount(source:file:)``.
+    static func rawDeclarationCount() throws -> Int {
+        try swiftFiles().reduce(0) { total, url in
+            total + rawDeclarationCount(source: try String(contentsOf: url, encoding: .utf8))
+        }
+    }
+
+    private static func swiftFiles() throws -> [URL] {
+        let sources = ShaderCallSiteScanner.repositoryRoot
+            .appendingPathComponent("Sources/SwiftShaders")
+        let enumerator = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil)
+        var files: [URL] = []
+        while let url = enumerator?.nextObject() as? URL {
+            if url.pathExtension == "swift" { files.append(url) }
+        }
+        return files.sorted { $0.path < $1.path }
+    }
+
+    // MARK: - The structural scan
+
+    static func scan(source: String, file: String) -> [PublicViewMethod] {
+        let characters = Array(ShaderCallSiteScanner.strippingComments(from: source))
+        var methods: [PublicViewMethod] = []
+
+        for start in occurrences(of: Array(extensionHeader), in: characters) {
+            guard let brace = indexOfOpeningBrace(characters, from: start + extensionHeader.count),
+                  let end = indexAfterMatchingBrace(characters, openAt: brace)
+            else { continue }
+            methods += scanBody(characters, from: brace, to: end, file: file)
+        }
+        return methods
+    }
+
+    private static let extensionHeader = "public extension View"
+
+    private static func scanBody(
+        _ characters: [Character], from start: Int, to end: Int, file: String
+    ) -> [PublicViewMethod] {
+        var methods: [PublicViewMethod] = []
+        var index = start
+
+        while index < end {
+            guard let head = matchFunctionHead(characters, at: index, limit: end) else {
+                index += 1
+                continue
+            }
+            guard let close = ShaderCallSiteScanner.indexAfterMatchingParenthesis(
+                characters, openAt: head.openParenthesis
+            ) else {
+                index = head.openParenthesis + 1
+                continue
+            }
+            let parameters = ShaderCallSiteScanner.splitTopLevel(
+                Array(characters[(head.openParenthesis + 1)..<(close - 1)])
+            )
+            let labels = parameters.map(label(ofParameter:))
+            let defaulted = parameters.indices.filter { parameters[$0].contains("=") }
+            methods.append(
+                PublicViewMethod(
+                    selector: head.name + "(" + labels.map { $0 + ":" }.joined() + ")",
+                    name: head.name,
+                    file: file,
+                    line: characters[..<index].reduce(1) { $1 == "\n" ? $0 + 1 : $0 },
+                    labels: labels,
+                    defaultedParameters: Set(defaulted)
+                )
+            )
+            index = close
+        }
+        return methods
+    }
+
+    /// Matches `func <name>(` — optionally preceded by `public`, and rejecting
+    /// generic declarations, which in this library are helpers such as
+    /// `shaderIf<T: View>(_:transform:)` rather than effects.
+    private static func matchFunctionHead(
+        _ characters: [Character], at index: Int, limit: Int
+    ) -> (name: String, openParenthesis: Int)? {
+        let keyword = Array("func ")
+        guard index + keyword.count < limit,
+              Array(characters[index..<(index + keyword.count)]) == keyword
+        else { return nil }
+        if index > 0, isIdentifier(characters[index - 1]) { return nil }
+
+        var cursor = index + keyword.count
+        while cursor < limit, characters[cursor].isWhitespace { cursor += 1 }
+        var name = ""
+        while cursor < limit, isIdentifier(characters[cursor]) {
+            name.append(characters[cursor])
+            cursor += 1
+        }
+        guard !name.isEmpty, cursor < limit, characters[cursor] == "(" else { return nil }
+        return (name, cursor)
+    }
+
+    /// The argument label of one parameter declaration: `at center: CGPoint` → `at`,
+    /// `radius: Float = 1` → `radius`, `_ value: Float` → `_`.
+    private static func label(ofParameter declaration: String) -> String {
+        String(declaration.prefix { isIdentifier($0) || $0 == "_" })
+    }
+
+    private static func isIdentifier(_ character: Character) -> Bool {
+        character.isLetter || character.isNumber || character == "_"
+    }
+
+    /// Index one past the `}` that closes the `{` at `openAt`.
+    private static func indexAfterMatchingBrace(_ characters: [Character], openAt: Int) -> Int? {
+        var depth = 0
+        var index = openAt
+        while index < characters.count {
+            if characters[index] == "{" { depth += 1 }
+            else if characters[index] == "}" {
+                depth -= 1
+                if depth == 0 { return index + 1 }
+            }
+            index += 1
+        }
+        return nil
+    }
+
+    private static func indexOfOpeningBrace(_ characters: [Character], from index: Int) -> Int? {
+        var cursor = index
+        while cursor < characters.count {
+            if characters[cursor] == "{" { return cursor }
+            if !characters[cursor].isWhitespace { return nil }
+            cursor += 1
+        }
+        return nil
+    }
+
+    private static func occurrences(of needle: [Character], in characters: [Character]) -> [Int] {
+        guard !needle.isEmpty, characters.count >= needle.count else { return [] }
+        var found: [Int] = []
+        for start in 0...(characters.count - needle.count)
+        where Array(characters[start..<(start + needle.count)]) == needle {
+            found.append(start)
+        }
+        return found
+    }
+
+    // MARK: - The raw yardstick
+
+    /// Declarations counted by line shape alone: a line that begins with exactly
+    /// four spaces and `func `, minus the handful of names that are known not to
+    /// be effects.
+    ///
+    /// This shares nothing with the structural scan — no comment stripping, no
+    /// brace matching, no notion of an extension block — so the two agreeing is
+    /// evidence rather than a tautology. If someone adds a member to a
+    /// `View` extension the structural scan cannot see, this count still rises
+    /// and the test goes red.
+    ///
+    /// The exclusions are named individually rather than pattern-matched, so
+    /// adding a new non-effect helper is a deliberate, reviewable edit here.
+    static let nonEffectMembers: Set<String> = [
+        "makeShader",   // ShaderBinding — assembles the Shader, not a View method
+        "shaderEffect", // ShaderBinding — the internal applier, one per effect kind
+        "clamped",      // three copies of a numeric helper on Double/Comparable
+        "shaderIf",     // ShaderView — conditional wrapper, applies no shader
+    ]
+
+    static func rawDeclarationCount(source: String) -> Int {
+        source.split(separator: "\n", omittingEmptySubsequences: false).reduce(0) { total, line in
+            guard line.hasPrefix("    func "), !line.hasPrefix("     ") else { return total }
+            let name = line.dropFirst("    func ".count).prefix { isIdentifier($0) }
+            return nonEffectMembers.contains(String(name)) ? total : total + 1
+        }
+    }
+}

@@ -278,7 +278,23 @@ public struct JellyWaveModifier: ViewModifier {
 
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 public extension View {
-    
+
+    /// Applies a wave distortion to the view.
+    /// - Parameters:
+    ///   - time: Animation time for the wave.
+    ///   - amplitude: Height of the waves.
+    ///   - frequency: Number of waves.
+    ///   - direction: Wave direction (0 = horizontal, 1 = vertical).
+    /// - Returns: A view with wave distortion applied.
+    func waveEffect(
+        time: Double,
+        amplitude: Double = 0.02,
+        frequency: Double = 10.0,
+        direction: Double = 0.0
+    ) -> some View {
+        modifier(WaveModifier(time: time, amplitude: amplitude, frequency: frequency, direction: direction))
+    }
+
     /// Applies multi-directional wave effect.
     func multiWave(
         time: Double,

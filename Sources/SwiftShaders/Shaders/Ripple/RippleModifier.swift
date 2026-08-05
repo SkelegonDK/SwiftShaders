@@ -224,7 +224,31 @@ public struct AnimatedRippleModifier: ViewModifier {
 
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 public extension View {
-    
+
+    /// Applies a ripple effect to the view.
+    /// - Parameters:
+    ///   - time: Animation time for the ripple.
+    ///   - origin: Center point of the ripple (normalized 0-1).
+    ///   - amplitude: Strength of the ripple distortion.
+    ///   - frequency: Number of ripple waves.
+    ///   - decay: How quickly ripples fade out.
+    /// - Returns: A view with the ripple effect applied.
+    func rippleEffect(
+        time: Double,
+        origin: CGPoint = CGPoint(x: 0.5, y: 0.5),
+        amplitude: Double = 0.02,
+        frequency: Double = 15.0,
+        decay: Double = 8.0
+    ) -> some View {
+        modifier(RippleModifier(
+            time: time,
+            origin: origin,
+            amplitude: amplitude,
+            frequency: frequency,
+            decay: decay
+        ))
+    }
+
     /// Applies a multi-ripple effect with multiple wave sources.
     /// - Parameters:
     ///   - time: Animation time.
