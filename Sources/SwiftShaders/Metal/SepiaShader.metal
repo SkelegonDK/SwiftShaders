@@ -4,6 +4,7 @@
 // License: MIT
 
 #include <metal_stdlib>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -22,11 +23,6 @@ constant float3x3 sepiaMatrix = float3x3(
     float3(0.769, 0.686, 0.534),
     float3(0.189, 0.168, 0.131)
 );
-
-// Luminance weights
-static float getLuminance(half3 color) {
-    return dot(float3(color), float3(0.299, 0.587, 0.114));
-}
 
 // Film grain generation
 static float filmGrain(float2 uv, float time, float intensity) {
@@ -71,7 +67,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     float2 uv = position / size;
     
     // Apply sepia base
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     half3 sepiaTone = half3(lum * 1.2, lum * 1.0, lum * 0.8);
     
     // Adjust warmth (more red/yellow)
@@ -108,7 +104,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     float2 uv = position / size;
     
     // Base sepia
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     half3 result = half3(lum * 1.1, lum * 0.95, lum * 0.75);
     
     // Film grain
@@ -151,7 +147,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     float2 uv = position / size;
     
     // Slight color cast (blue shadows, yellow highlights)
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     half3 result = color.rgb;
     
@@ -196,7 +192,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     result.g = pow(result.g, half(0.9));
     
     // Add cyan to shadows
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     result.r -= half((1.0 - lum) * 0.1 * intensity);
     result.b += half((1.0 - lum) * 0.15 * intensity);
     
@@ -221,7 +217,7 @@ static float filmGrain(float2 uv, float time, float intensity) {
     float3 tintColor
 ) {
     float2 uv = position / size;
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Desaturate
     half3 result = mix(half3(lum), color.rgb, half(1.0 - fadeAmount * 0.5));

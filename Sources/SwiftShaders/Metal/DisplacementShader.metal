@@ -1,5 +1,6 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Displacement Map Shader
@@ -8,21 +9,16 @@ using namespace metal;
 
 // MARK: - Utility Functions
 
-/// Pseudo-random hash function.
-static float dispHash(float2 p) {
-    return fract(sin(dot(p, float2(12.9898, 78.233))) * 43758.5453);
-}
-
 /// 2D noise function for smooth displacement.
 static float dispNoise(float2 p) {
     float2 i = floor(p);
     float2 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     
-    float a = dispHash(i);
-    float b = dispHash(i + float2(1.0, 0.0));
-    float c = dispHash(i + float2(0.0, 1.0));
-    float d = dispHash(i + float2(1.0, 1.0));
+    float a = hashSine2DAlternateSeed(i);
+    float b = hashSine2DAlternateSeed(i + float2(1.0, 0.0));
+    float c = hashSine2DAlternateSeed(i + float2(0.0, 1.0));
+    float d = hashSine2DAlternateSeed(i + float2(1.0, 1.0));
     
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
@@ -49,10 +45,10 @@ static float2 dispGradNoise(float2 p) {
     
     float2 u = f * f * (3.0 - 2.0 * f);
     
-    float n00 = dispHash(i);
-    float n10 = dispHash(i + float2(1.0, 0.0));
-    float n01 = dispHash(i + float2(0.0, 1.0));
-    float n11 = dispHash(i + float2(1.0, 1.0));
+    float n00 = hashSine2DAlternateSeed(i);
+    float n10 = hashSine2DAlternateSeed(i + float2(1.0, 0.0));
+    float n01 = hashSine2DAlternateSeed(i + float2(0.0, 1.0));
+    float n11 = hashSine2DAlternateSeed(i + float2(1.0, 1.0));
     
     float dx = mix(n10 - n00, n11 - n01, u.y);
     float dy = mix(n01 - n00, n11 - n10, u.x);
@@ -571,13 +567,13 @@ float2 blockDisplacement(
     
     // Grid of blocks
     float2 blockCoord = floor(uv / blockSize);
-    float blockRand = dispHash(blockCoord + floor(time * 8.0));
+    float blockRand = hashSine2DAlternateSeed(blockCoord + floor(time * 8.0));
     
     if (blockRand < probability) {
         // Random offset for this block
         float2 offset = float2(
-            (dispHash(blockCoord * 2.0 + time) - 0.5) * 2.0,
-            (dispHash(blockCoord * 3.0 + time) - 0.5) * 2.0
+            (hashSine2DAlternateSeed(blockCoord * 2.0 + time) - 0.5) * 2.0,
+            (hashSine2DAlternateSeed(blockCoord * 3.0 + time) - 0.5) * 2.0
         ) * amount * bounds.zw * 0.1;
         
         return position + offset;
@@ -600,11 +596,11 @@ float2 scanlineJitter(
     
     // Scan line index
     float lineIndex = floor(uv.y / lineHeight);
-    float lineRand = dispHash(float2(lineIndex, floor(time * 20.0)));
+    float lineRand = hashSine2DAlternateSeed(float2(lineIndex, floor(time * 20.0)));
     
     if (lineRand < probability) {
         // Horizontal jitter
-        float jitter = (dispHash(float2(lineIndex * 7.0, time)) - 0.5) * jitterAmount;
+        float jitter = (hashSine2DAlternateSeed(float2(lineIndex * 7.0, time)) - 0.5) * jitterAmount;
         return float2(position.x + jitter * bounds.z, position.y);
     }
     
@@ -679,7 +675,7 @@ float2 gravityDrip(
     
     // Multiple drip streams
     float streamX = floor(uv.x * 10.0) / 10.0;
-    float streamPhase = dispHash(float2(streamX, 0.0)) * 6.28;
+    float streamPhase = hashSine2DAlternateSeed(float2(streamX, 0.0)) * 6.28;
     
     // Drip timing
     float dripTime = fract(time * dripSpeed + streamPhase);

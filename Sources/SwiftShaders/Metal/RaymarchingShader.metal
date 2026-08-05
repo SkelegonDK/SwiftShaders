@@ -1,35 +1,26 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Raymarching Utility Functions
 
-/// Hash function for pseudo-random values.
-static float hash(float n) {
-    return fract(sin(n) * 43758.5453123);
-}
-
-/// 3D hash function.
-static float hash3D(float3 p) {
-    return fract(sin(dot(p, float3(127.1, 311.7, 74.7))) * 43758.5453);
-}
-
 /// Value noise function.
-static float valueNoise(float3 p) {
+static float valueNoise3D(float3 p) {
     float3 i = floor(p);
     float3 f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     
     float n = i.x + i.y * 57.0 + i.z * 113.0;
     
-    float a = hash(n);
-    float b = hash(n + 1.0);
-    float c = hash(n + 57.0);
-    float d = hash(n + 58.0);
-    float e = hash(n + 113.0);
-    float f1 = hash(n + 114.0);
-    float g = hash(n + 170.0);
-    float h = hash(n + 171.0);
+    float a = hashSine1D(n);
+    float b = hashSine1D(n + 1.0);
+    float c = hashSine1D(n + 57.0);
+    float d = hashSine1D(n + 58.0);
+    float e = hashSine1D(n + 113.0);
+    float f1 = hashSine1D(n + 114.0);
+    float g = hashSine1D(n + 170.0);
+    float h = hashSine1D(n + 171.0);
     
     return mix(
         mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
@@ -45,7 +36,7 @@ static float fbm3D(float3 p, int octaves) {
     float frequency = 1.0;
     
     for (int i = 0; i < octaves; i++) {
-        value += valueNoise(p * frequency) * amplitude;
+        value += valueNoise3D(p * frequency) * amplitude;
         amplitude *= 0.5;
         frequency *= 2.0;
     }
@@ -72,48 +63,12 @@ static float sdTorus(float3 p, float2 t) {
     return length(q) - t.y;
 }
 
-/// Cylinder signed distance function.
-static float sdCylinder(float3 p, float h, float r) {
-    float2 d = abs(float2(length(p.xz), p.y)) - float2(r, h);
-    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
-}
-
-/// Octahedron signed distance function.
-static float sdOctahedron(float3 p, float s) {
-    p = abs(p);
-    float m = p.x + p.y + p.z - s;
-    
-    float3 q;
-    if (3.0 * p.x < m) {
-        q = p;
-    } else if (3.0 * p.y < m) {
-        q = p.yzx;
-    } else if (3.0 * p.z < m) {
-        q = p.zxy;
-    } else {
-        return m * 0.57735027;
-    }
-    
-    float k = clamp(0.5 * (q.z - q.y + s), 0.0, s);
-    return length(float3(q.x, q.y - s + k, q.z - k));
-}
-
 // MARK: - SDF Operations
 
 /// Smooth minimum for blending shapes.
 static float smin(float a, float b, float k) {
     float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
-}
-
-/// Smooth subtraction.
-static float smax(float a, float b, float k) {
-    return -smin(-a, -b, k);
-}
-
-/// Union operation.
-static float opUnion(float d1, float d2) {
-    return min(d1, d2);
 }
 
 /// Subtraction operation.
@@ -147,17 +102,6 @@ static float3x3 rotateY(float angle) {
         c, 0.0, s,
         0.0, 1.0, 0.0,
         -s, 0.0, c
-    );
-}
-
-/// Rotation matrix around Z axis.
-static float3x3 rotateZ(float angle) {
-    float c = cos(angle);
-    float s = sin(angle);
-    return float3x3(
-        c, -s, 0.0,
-        s, c, 0.0,
-        0.0, 0.0, 1.0
     );
 }
 
@@ -707,7 +651,7 @@ static float terrainHeight(float2 p, int octaves) {
     
     for (int i = 0; i < octaves; i++) {
         float2 pp = p * freq;
-        float n = valueNoise(float3(pp.x, 0.0, pp.y));
+        float n = valueNoise3D(float3(pp.x, 0.0, pp.y));
         h += n * amp;
         amp *= 0.5;
         freq *= 2.0;
@@ -839,13 +783,13 @@ half4 blackHole(
         for (int j = -1; j <= 1; j++) {
             float2 cell = starCell + float2(i, j);
             float2 starPos = float2(
-                hash(cell.x + cell.y * 57.0),
-                hash(cell.x * 57.0 + cell.y)
+                hashSine1D(cell.x + cell.y * 57.0),
+                hashSine1D(cell.x * 57.0 + cell.y)
             );
             
             float2 toStar = starLocal - starPos - float2(i, j);
             float starDist = length(toStar);
-            float brightness = hash(cell.x * 113.0 + cell.y * 31.0);
+            float brightness = hashSine1D(cell.x * 113.0 + cell.y * 31.0);
             
             if (starDist < 0.05 * brightness) {
                 float glow = exp(-starDist * 40.0) * brightness;
@@ -869,7 +813,7 @@ half4 blackHole(
         
         // Disk pattern
         float pattern = sin(diskAngle * 8.0 - time * 2.0) * 0.5 + 0.5;
-        pattern += valueNoise(float3(diskAngle * 10.0, dist * 20.0, time)) * 0.3;
+        pattern += valueNoise3D(float3(diskAngle * 10.0, dist * 20.0, time)) * 0.3;
         
         // Doppler effect (blue shift on approaching side, red shift on receding)
         float dopplerShift = sin(diskAngle - time * diskSpeed);

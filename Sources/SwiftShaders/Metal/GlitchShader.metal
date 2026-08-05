@@ -1,15 +1,11 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Glitch Effect Shader
 // Creates digital glitch artifacts including scan lines, color shifts,
 // block displacement, and signal noise.
-
-/// Pseudo-random hash function.
-static float glitchHash(float n) {
-    return fract(sin(n) * 43758.5453123);
-}
 
 /// 2D noise function for glitch patterns.
 static float glitchNoise(float2 p) {
@@ -19,8 +15,8 @@ static float glitchNoise(float2 p) {
     
     float n = i.x + i.y * 57.0;
     return mix(
-        mix(glitchHash(n), glitchHash(n + 1.0), f.x),
-        mix(glitchHash(n + 57.0), glitchHash(n + 58.0), f.x),
+        mix(hashSine1D(n), hashSine1D(n + 1.0), f.x),
+        mix(hashSine1D(n + 57.0), hashSine1D(n + 58.0), f.x),
         f.y
     );
 }
@@ -39,7 +35,7 @@ float2 glitch(
     
     // Block-based displacement
     float block = floor(uv.y / blockSize);
-    float noise = glitchHash(block + floor(time * 10.0));
+    float noise = hashSine1D(block + floor(time * 10.0));
     
     // Only glitch some blocks randomly
     if (noise > intensity) {
@@ -47,7 +43,7 @@ float2 glitch(
     }
     
     // Calculate displacement
-    float displacement = (glitchHash(block * time) - 0.5) * intensity * bounds.z * 0.2;
+    float displacement = (hashSine1D(block * time) - 0.5) * intensity * bounds.z * 0.2;
     
     return float2(position.x + displacement, position.y);
 }
@@ -131,7 +127,7 @@ half4 digitalCorruption(
     
     // Grid-based corruption
     float2 block = floor(uv * float2(1.0/blockWidth, 1.0/blockHeight));
-    float blockNoise = glitchHash(dot(block, float2(12.9898, 78.233)) + floor(time * 8.0));
+    float blockNoise = hashSine1D(dot(block, float2(12.9898, 78.233)) + floor(time * 8.0));
     
     half4 result = color;
     
@@ -167,11 +163,11 @@ float2 scanlineGlitch(
     
     // Animated scan lines
     float scanY = floor(uv.y / lineHeight);
-    float scanPhase = glitchHash(scanY + floor(time * 15.0));
+    float scanPhase = hashSine1D(scanY + floor(time * 15.0));
     
     if (scanPhase > 1.0 - intensity * 0.3) {
         // Horizontal shift
-        float shift = (glitchHash(scanY * time) - 0.5) * intensity * bounds.z * 0.15;
+        float shift = (hashSine1D(scanY * time) - 0.5) * intensity * bounds.z * 0.15;
         return float2(position.x + shift, position.y);
     }
     
@@ -220,13 +216,13 @@ half4 pixelGlitch(
     float2 uv = position / bounds.zw;
     float2 pixelUV = floor(uv / pixelSize) * pixelSize;
     
-    float noise = glitchHash(dot(pixelUV, float2(12.9898, 78.233)) + floor(time * 20.0));
+    float noise = hashSine1D(dot(pixelUV, float2(12.9898, 78.233)) + floor(time * 20.0));
     
     half4 result = color;
     
     if (noise < intensity * 0.3) {
         // Solid color block
-        result.rgb = half3(glitchHash(noise), glitchHash(noise * 2.0), glitchHash(noise * 3.0));
+        result.rgb = half3(hashSine1D(noise), hashSine1D(noise * 2.0), hashSine1D(noise * 3.0));
     } else if (noise < intensity * 0.5) {
         // Brightness shift
         result.rgb *= half(1.5 + noise);

@@ -1,24 +1,10 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Water Effect Shader
 // Simulates water surfaces, reflections, and caustics.
-
-/// Noise for water simulation.
-static float waterNoise(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    
-    float n = i.x + i.y * 57.0;
-    float a = fract(sin(n) * 43758.5453);
-    float b = fract(sin(n + 1.0) * 43758.5453);
-    float c = fract(sin(n + 57.0) * 43758.5453);
-    float d = fract(sin(n + 58.0) * 43758.5453);
-    
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
 
 /// Water surface ripple distortion.
 [[ stitchable ]]
@@ -37,7 +23,7 @@ float2 waterSurface(
                   cos(uv.y * frequency * 8.0 + time * speed * 0.8);
     float wave2 = sin(uv.x * frequency * 15.0 - time * speed * 1.2) * 
                   cos(uv.y * frequency * 12.0 - time * speed);
-    float wave3 = waterNoise(uv * frequency * 5.0 + time * speed * 0.5);
+    float wave3 = valueNoiseLattice(uv * frequency * 5.0 + time * speed * 0.5);
     
     float combined = (wave1 + wave2 * 0.5 + wave3 * 0.3) * amplitude;
     
@@ -169,7 +155,7 @@ half4 oceanWaves(
     
     // Foam on wave crests
     float foam = smoothstep(foamThreshold, foamThreshold + 0.1, totalWave);
-    foam *= waterNoise(uv * 50.0 + time * 2.0);
+    foam *= valueNoiseLattice(uv * 50.0 + time * 2.0);
     waveColor = mix(waveColor, half3(1.0h), half(foam));
     
     half3 result = mix(color.rgb, waveColor, half(0.7));
@@ -247,7 +233,7 @@ half4 underwater(
     result += half3(0.1h, 0.2h, 0.3h) * half(rays);
     
     // Floating particles
-    float particles = waterNoise(uv * 100.0 + time * 0.5);
+    float particles = valueNoiseLattice(uv * 100.0 + time * 0.5);
     particles = step(0.97, particles);
     result += half(particles * 0.3);
     

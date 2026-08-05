@@ -4,6 +4,7 @@
 // License: MIT
 
 #include <metal_stdlib>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -15,11 +16,6 @@ using namespace metal;
 // 3. Output black or white (or other colors)
 // 4. Optional dithering for smoother appearance
 // =============================================================================
-
-// Get luminance
-static float getLuminance(half3 color) {
-    return dot(float3(color), float3(0.299, 0.587, 0.114));
-}
 
 // Bayer dithering matrix 4x4
 constant float bayerMatrix[16] = {
@@ -44,7 +40,7 @@ constant float bayerMatrix[16] = {
     float3 lowColor,
     float3 highColor
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     half3 result = (lum > threshold) ? half3(highColor) : half3(lowColor);
     return half4(result, color.a);
 }
@@ -59,7 +55,7 @@ constant float bayerMatrix[16] = {
     float3 lowColor,
     float3 highColor
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Get dither value from Bayer matrix
     int x = int(fmod(position.x, 4.0));
@@ -82,7 +78,7 @@ constant float bayerMatrix[16] = {
     float levels,
     float3 tintColor
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Quantize to discrete levels
     float quantized = floor(lum * levels) / (levels - 1.0);
@@ -122,7 +118,7 @@ constant float bayerMatrix[16] = {
     float3 lowColor,
     float3 highColor
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Smooth transition
     float t = smoothstep(threshold - softness, threshold + softness, lum);
@@ -148,7 +144,7 @@ constant float bayerMatrix[16] = {
     float spatialVariation = sin(uv.x * 6.28318) * cos(uv.y * 6.28318);
     float adaptiveThreshold = baseThreshold + spatialVariation * adaptAmount;
     
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     float result = (lum > adaptiveThreshold) ? 1.0 : 0.0;
     
     return half4(half3(result), color.a);
@@ -166,7 +162,7 @@ constant float bayerMatrix[16] = {
     float3 lowColor,
     float3 highColor
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Animated threshold
     float animatedThreshold = 0.5 + sin(time * speed) * amplitude;
@@ -186,7 +182,7 @@ constant float bayerMatrix[16] = {
     float dotSize,
     float angle
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Rotate coordinates
     float c = cos(angle);
@@ -219,7 +215,7 @@ constant float bayerMatrix[16] = {
     float3 fillColor
 ) {
     // Use derivatives to detect edges
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     float edge = fwidth(lum);
     
     // Threshold edges
@@ -247,7 +243,7 @@ constant float bayerMatrix[16] = {
     // Generate noise
     float noise = fract(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
     
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     float noisyThreshold = threshold + (noise - 0.5) * noiseAmount;
     
     half3 result = (lum > noisyThreshold) ? half3(highColor) : half3(lowColor);
@@ -267,7 +263,7 @@ constant float bayerMatrix[16] = {
     float3 midColor,
     float3 lightColor
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     half3 result;
     if (lum < threshold1) {

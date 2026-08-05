@@ -1,41 +1,15 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Noise Generation Shader
 // Provides various noise algorithms for procedural effects.
 
-/// Hash function for pseudo-random generation.
-static float noiseHash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453123);
-}
-
-/// Hash function for 3D input.
-static float noiseHash3(float3 p) {
-    return fract(sin(dot(p, float3(127.1, 311.7, 74.7))) * 43758.5453123);
-}
-
-/// 2D value noise.
-static float valueNoise(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    
-    // Smooth interpolation
-    float2 u = f * f * (3.0 - 2.0 * f);
-    
-    // Four corners
-    float a = noiseHash(i);
-    float b = noiseHash(i + float2(1.0, 0.0));
-    float c = noiseHash(i + float2(0.0, 1.0));
-    float d = noiseHash(i + float2(1.0, 1.0));
-    
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-}
-
 /// 2D gradient noise (Perlin-like).
 static float2 gradientNoise2D(float2 p) {
     float2 i = floor(p);
-    float angle = noiseHash(i) * 6.28318;
+    float angle = hashSine2DExtended(i) * 6.28318;
     return float2(cos(angle), sin(angle));
 }
 
@@ -65,7 +39,7 @@ static float fbm(float2 p, int octaves, float lacunarity, float gain) {
     float frequency = 1.0;
     
     for (int i = 0; i < octaves; i++) {
-        value += amplitude * valueNoise(p * frequency);
+        value += amplitude * valueNoise2DExtended(p * frequency);
         amplitude *= gain;
         frequency *= lacunarity;
     }
@@ -86,7 +60,7 @@ half4 noise(
     float2 uv = position / bounds.zw;
     
     // Animated noise
-    float n = valueNoise(uv * scale * 100.0 + time * 10.0);
+    float n = valueNoise2DExtended(uv * scale * 100.0 + time * 10.0);
     
     // Mix with original color
     half noiseValue = half((n - 0.5) * intensity);
@@ -106,7 +80,7 @@ half4 filmGrain(
     float2 uv = position / bounds.zw;
     
     // Animated grain
-    float grain = noiseHash(uv * size + fract(time * 100.0));
+    float grain = hashSine2DExtended(uv * size + fract(time * 100.0));
     grain = (grain - 0.5) * intensity;
     
     // Luminance-based grain (more visible in midtones)
@@ -208,7 +182,7 @@ half4 noiseVoronoi(
     for (int y = -1; y <= 1; y++) {
         for (int x = -1; x <= 1; x++) {
             float2 neighbor = float2(x, y);
-            float2 point = noiseHash(cellID + neighbor + time * 0.1) * 0.5 + 0.25;
+            float2 point = hashSine2DExtended(cellID + neighbor + time * 0.1) * 0.5 + 0.25;
             float dist = length(cellUV - neighbor - point);
             minDist = min(minDist, dist);
         }
@@ -237,8 +211,8 @@ float2 turbulence(
     float freq = scale;
     
     for (int i = 0; i < int(octaves); i++) {
-        float nx = valueNoise(uv * freq + float2(time, 0.0));
-        float ny = valueNoise(uv * freq + float2(0.0, time) + 100.0);
+        float nx = valueNoise2DExtended(uv * freq + float2(time, 0.0));
+        float ny = valueNoise2DExtended(uv * freq + float2(0.0, time) + 100.0);
         offset += (float2(nx, ny) - 0.5) * amp;
         amp *= 0.5;
         freq *= 2.0;

@@ -1,14 +1,10 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Hologram Effect Shader
 // Creates futuristic holographic display effects.
-
-/// Hash function for hologram noise.
-static float holoHash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453123);
-}
 
 /// Basic hologram effect with scan lines and color shift.
 [[ stitchable ]]
@@ -75,16 +71,16 @@ half4 glitchyHologram(
     
     // Random glitch blocks
     float blockY = floor(uv.y * 20.0);
-    float glitchNoise = holoHash(float2(blockY, floor(time * 10.0)));
+    float glitchNoise = hashSine2DExtended(float2(blockY, floor(time * 10.0)));
     
     if (glitchNoise < glitchIntensity * 0.3) {
         // Horizontal offset glitch
-        float offset = (holoHash(float2(blockY, time)) - 0.5) * 0.1;
+        float offset = (hashSine2DExtended(float2(blockY, time)) - 0.5) * 0.1;
         uv.x += offset;
     }
     
     // Noise overlay
-    float noise = holoHash(uv * 500.0 + time * 100.0);
+    float noise = hashSine2DExtended(uv * 500.0 + time * 100.0);
     
     // Scan lines
     float scan = sin(uv.y * bounds.w * 1.5) * 0.5 + 0.5;
@@ -100,7 +96,7 @@ half4 glitchyHologram(
     result += half(noise * noiseAmount);
     
     // Random brightness drops
-    float dropout = step(0.95, holoHash(float2(uv.y * 10.0, floor(time * 8.0))));
+    float dropout = step(0.95, hashSine2DExtended(float2(uv.y * 10.0, floor(time * 8.0))));
     result *= half(1.0 - dropout * 0.5);
     
     return half4(result, color.a);

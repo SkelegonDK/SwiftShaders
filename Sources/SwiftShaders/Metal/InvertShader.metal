@@ -4,6 +4,7 @@
 // License: MIT
 
 #include <metal_stdlib>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -15,11 +16,6 @@ using namespace metal;
 // 3. Selective channel inversion for creative effects
 // 4. Smooth transition for animated inversion
 // =============================================================================
-
-// Luminance calculation
-static float getLuminance(half3 color) {
-    return dot(float3(color), float3(0.299, 0.587, 0.114));
-}
 
 // =============================================================================
 // COLOR EFFECT: Basic Invert
@@ -46,7 +42,7 @@ static float getLuminance(half3 color) {
     float threshold
 ) {
     // Calculate if this is likely an image (high color variation) or UI
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Simple heuristic: very light or very dark colors get inverted
     // Mid-tones (likely images) are preserved more
@@ -85,7 +81,7 @@ static float getLuminance(half3 color) {
     half4 color,
     float amount
 ) {
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     float invertedLum = 1.0 - lum;
     
     // Scale color to match inverted luminance while preserving hue
@@ -107,13 +103,13 @@ static float getLuminance(half3 color) {
     float amount
 ) {
     // Convert to a simple hue representation
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Rotate hue by 180 degrees (complementary color)
     half3 inverted = half3(1.0) - color.rgb;
     
     // Restore original luminance
-    float invertedLum = getLuminance(inverted);
+    float invertedLum = luminance(inverted);
     if (invertedLum > 0.001) {
         inverted *= half(lum / invertedLum);
     }
@@ -159,7 +155,7 @@ static float getLuminance(half3 color) {
     float edgeEnhance
 ) {
     // Convert to grayscale
-    float lum = getLuminance(color.rgb);
+    float lum = luminance(color.rgb);
     
     // Invert
     float inverted = 1.0 - lum;

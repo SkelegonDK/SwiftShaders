@@ -1,28 +1,10 @@
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // MARK: - Electric Effect Shader
 // Creates lightning, plasma, and electrical discharge effects.
-
-/// Hash function for electric noise.
-static float electricHash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
-}
-
-/// Noise for electric patterns.
-static float electricNoise(float2 p) {
-    float2 i = floor(p);
-    float2 f = fract(p);
-    f = f * f * (3.0 - 2.0 * f);
-    
-    float a = electricHash(i);
-    float b = electricHash(i + float2(1.0, 0.0));
-    float c = electricHash(i + float2(0.0, 1.0));
-    float d = electricHash(i + float2(1.0, 1.0));
-    
-    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-}
 
 /// Lightning bolt effect.
 [[ stitchable ]]
@@ -47,7 +29,7 @@ half4 lightning(
     // Zigzag down the screen
     for (float y = 0.0; y < 1.0; y += 0.02) {
         // Random displacement at each step
-        float noise = electricHash(float2(y * 100.0, floor(time * 10.0)));
+        float noise = hashSine2D(float2(y * 100.0, floor(time * 10.0)));
         boltX += (noise - 0.5) * branchiness * 0.1;
         boltX = clamp(boltX, 0.1, 0.9);
         
@@ -64,7 +46,7 @@ half4 lightning(
     result += lightningColor * half(accumulator);
     
     // Occasional flash
-    float flash = step(0.98, electricHash(float2(floor(time * 3.0), 0.0)));
+    float flash = step(0.98, hashSine2D(float2(floor(time * 3.0), 0.0)));
     result += half3(flash * intensity * 0.3);
     
     return half4(result, color.a);
@@ -134,7 +116,7 @@ half4 electricArc(
     float2 closestPoint = start + lineDir * t * lineLength;
     
     // Add jagged displacement
-    float noise = electricNoise(float2(t * 20.0 + time * 10.0, floor(time * 15.0)));
+    float noise = valueNoise2D(float2(t * 20.0 + time * 10.0, floor(time * 15.0)));
     float2 displacement = float2(lineDir.y, -lineDir.x) * (noise - 0.5) * 0.1;
     closestPoint += displacement;
     
@@ -176,9 +158,9 @@ half4 staticElectricity(
         float2 localUV = fract(uv * density + phase);
         
         // Random spark position
-        float rx = electricHash(grid);
-        float ry = electricHash(grid + 100.0);
-        float sparkTime = electricHash(grid + 200.0);
+        float rx = hashSine2D(grid);
+        float ry = hashSine2D(grid + 100.0);
+        float sparkTime = hashSine2D(grid + 200.0);
         
         // Spark timing
         float spark = step(0.95, sin(time * 10.0 + sparkTime * 100.0));
@@ -258,7 +240,7 @@ half4 electricNeon(
     
     // Flicker
     float flicker = 0.7 + 0.3 * sin(time * flickerSpeed * 10.0);
-    flicker *= 0.8 + 0.2 * electricHash(float2(floor(time * 20.0), 0.0));
+    flicker *= 0.8 + 0.2 * hashSine2D(float2(floor(time * 20.0), 0.0));
     
     // Neon color
     half3 neonColor = half3(0.2h, 0.6h, 1.0h);

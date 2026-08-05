@@ -5,6 +5,7 @@
 
 #include <metal_stdlib>
 #include <SwiftUI/SwiftUI_Metal.h>
+#include "SwiftShadersCommon.h"
 using namespace metal;
 
 // =============================================================================
@@ -17,16 +18,6 @@ using namespace metal;
 // 4. Sampling center of each cell
 // 5. Optional edge/grout rendering
 // =============================================================================
-
-// Hash function for random values
-static float2 hash2(float2 p) {
-    return fract(sin(float2(dot(p, float2(127.1, 311.7)), 
-                            dot(p, float2(269.5, 183.3)))) * 43758.5453);
-}
-
-static float hash(float2 p) {
-    return fract(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
-}
 
 // =============================================================================
 // LAYER EFFECT: Square Mosaic
@@ -132,7 +123,7 @@ static float hash(float2 p) {
     for (int y = -1; y <= 1; y++) {
         for (int x = -1; x <= 1; x++) {
             float2 neighbor = float2(x, y);
-            float2 point = hash2(cell + neighbor) * randomness + (1.0 - randomness) * 0.5;
+            float2 point = hashSine2DTo2D(cell + neighbor) * randomness + (1.0 - randomness) * 0.5;
             float2 diff = neighbor + point - frac;
             float dist = length(diff);
             
@@ -259,7 +250,7 @@ static float hash(float2 p) {
     float2 tileCoord = floor(position / tileSize);
     
     // Add slight variation per tile
-    float variation = hash(tileCoord) * 0.1;
+    float variation = hashSine2D(tileCoord) * 0.1;
     
     half3 result = color.rgb + half3(variation - 0.05);
     
