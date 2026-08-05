@@ -626,6 +626,84 @@ The interface should make the wrong thing unrepresentable: a caller cannot pick 
 - Do not add this layer *on top of* the existing call sites — replace them. Two paths is the problem you're fixing.
 - Do not invent a `ShaderLibrary` API that doesn't exist (0.3). The module wraps the dynamic lookup; it cannot make it checked.
 
+### ✅ Phase 5 RESULTS — executed 2026-08-05 (commit `ec57571` + docs commit)
+
+**Done. All 208 call sites go through one internal binding module; the tests enumerate the module;
+the migration itself was caught making 4 mistakes, and the stricter tests exposed 2 latent
+pre-existing bugs no earlier oracle could see.**
+
+**The design** — `/design-an-interface` ran with three deliberately divergent briefs:
+
+| Design | Verdict |
+|---|---|
+| A — one string-keyed value type, manifest consulted at runtime | Rejected: per-site checking degrades to debug-time preconditions, tests can only compile synthesized arguments, every modifier stack gains a `.visualEffect` wrapper, and the TSV becomes load-bearing in the shipped product |
+| B — 256 generated factories with typed labels, codegen from the manifest | Rejected *for now*: strongest compile-time story, but it commits Metal parameter names and 256 symbols as public API before 7a decides the descriptor's shape, and needs a second extraction pipeline (parameter names). **Kept as input to 7a.** |
+| C — per-kind types, phantom geometry, registry | **Chosen, with two amendments** |
+
+The amendments, both driven by measurement: geometry became a declared *value* rather than a phantom
+type (the phantom bought no call-site safety — callers never spell geometry either way — and cost a
+9-overload diagnostics tax), and `maxSampleOffset` kept a per-site override because ~10 sites compute
+it from effect parameters (`radius`, `pixelSize`, …) — a per-binding constant cannot express that.
+A third choice against all three agents: the module is **`internal`**. Its only consumers are the
+208 in-target call sites; the public `View` extensions and modifiers are untouched, and 7a keeps its
+freedom.
+
+**The shape** (`Sources/SwiftShaders/Core/ShaderBinding.swift`, ~250 lines): three concrete types
+`ShaderBinding.Color/.Distortion/.Layer` (kind is nominal — the applier method is picked by overload
+resolution, unrepresentable to get wrong); `LeadingGeometry` = `.boundingRect | .viewSize | .plain`;
+`SampleRegion` = `.fixed | .viewSize | .perSite` (perSite = every application must pass
+`maxSampleOffset:`, asserted in debug); one `View.shaderEffect(_:_:)` applier per kind; declarations
+live in a `ShaderFamily` enum per modifier file (33 families, 207 bindings), listed in
+`ShaderBindingRegistry`.
+
+**The test rework** — the four defect classes survive, retargeted, plus a fifth:
+
+| Check | Yardstick |
+|---|---|
+| name exists / kind matches | manifest, per *declaration* |
+| **geometry matches (new)** | manifest's first explicit parameter type — `float4`⇔bounds, `float2`⇔size, verified exact against Phase 0.6's name-derived split (144/85/27) before being trusted |
+| arity / argument types | manifest, per *application site*, via a new declaration+application scanner |
+| perSite sites pass an offset | declaration ↔ site cross-check |
+| registry completeness | declarations scanned from source — the registry cannot vouch for itself |
+| compile oracle | `Shader.compile(as:)` over every site, assembled by the binding's own `makeShader`, so it verifies the production prefix path |
+
+Raw-call-site scanning is now a **zero-tolerance lint** (2 legitimate occurrences remain in
+`Sources/`: the module's lookup and a doc comment). `ShaderRenderingTests` renders through the
+module and goes red if `pixelate`'s declared geometry is wrong (control 6).
+
+**Defects caught on the suite's first run — all five fixed:**
+
+1. **4 migration-script bugs**: the transformer didn't strip comments, so an inline `// comment`
+   after an argument swallowed the following argument onto a commented-out line (`scanlinesLCD`,
+   `scanlinesRolling`, `vignetteAnimated`, `emboss`). Swift compiled it happily; the arity tests and
+   compile oracle named all four.
+2. **2 latent pre-existing bugs** (`emboss`, `polaroid`): size-convention functions whose sites
+   passed a literal `.float2(1, 1)` annotated *"Will be replaced by proxy"* — nothing ever replaced
+   it. Types and arity were correct, so Phase 2's oracle and `compile(as:)` had always passed them;
+   only the new geometry class could see it. Both now declare `.viewSize` and receive the real view
+   size — **a deliberate rendering change** (emboss computed texel offsets against a 1×1 surface).
+
+**Negative controls — six, all red, each edit confirmed in the file before the run:**
+geometry lie · kind lie · registry omission · perSite site without offset · dropped argument ·
+`pixelate` declared `.plain` (rendering test red). Tree restored, full suite green after.
+
+**🔴 New trap, earned the hard way — a control's *cleanup* is an edit too.** The first control run
+"restored" files with `git checkout --` while the migration was still uncommitted — silently
+reverting three files to their pre-migration state — and its verdict grep matched `failures` but
+XCTest prints `1 failure`, so every control printed no verdict at all. Two silent no-ops in one
+harness, in a session already carrying trap #7. The fixes now in practice: **commit before running
+destructive controls; make control edits with an asserted exact-string replace; grep verdicts with a
+pattern that matches the singular; and confirm the restore the same way as the edit.**
+
+**Verification** (all fresh): `swift test` → **69 tests, 0 failures**; compile oracle **0 rejections
+of 208**; `make clean && make build` clean; `make app` packages the Gallery.
+
+- [x] Binding tests pass, exercising the module's interface rather than raw call sites.
+- [x] `ShaderLibrary.swiftShaders` in `Sources/` → **2** (module lookup + doc comment), from 209.
+- [x] Gallery builds and packages. *Deviation from the checklist:* no before/after screenshots were
+  captured — rendering equivalence rests on `ShaderRenderingTests` going through the module plus the
+  0-of-208 oracle, and `emboss`/`polaroid` are *deliberately not identical* (see above).
+
 ---
 
 ## Phase 6 — Replace the test suite
