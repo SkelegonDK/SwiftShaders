@@ -231,6 +231,7 @@ enum PublicViewMethodScanner {
         "shaderEffect", // ShaderBinding — the internal applier, one per effect kind
         "clamped",      // three copies of a numeric helper on Double/Comparable
         "shaderIf",     // ShaderView — conditional wrapper, applies no shader
+        "elapsed",      // ShaderClock — time conversion, not a View method
     ]
 
     static func rawDeclarationCount(source: String) -> Int {
