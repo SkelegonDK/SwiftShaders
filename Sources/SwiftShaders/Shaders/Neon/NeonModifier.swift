@@ -154,7 +154,7 @@ public struct NeonOutlineModifier: ViewModifier {
 /// Animated neon color shift
 public struct NeonColorShiftModifier: ViewModifier {
     let speed: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(speed: Float = 1.0) {
         self.speed = speed
@@ -162,7 +162,7 @@ public struct NeonColorShiftModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 NeonShaderBindings.neonColorShift,
@@ -176,7 +176,7 @@ public struct NeonColorShiftModifier: ViewModifier {
 /// Electric neon with flicker
 public struct NeonElectricModifier: ViewModifier {
     let configuration: NeonConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: NeonConfiguration = .electric) {
         self.configuration = configuration
@@ -187,7 +187,7 @@ public struct NeonElectricModifier: ViewModifier {
         let (r2, g2, b2) = colorToFloat3(configuration.secondaryColor)
         
         return TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 NeonShaderBindings.neonElectric,

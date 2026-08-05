@@ -235,7 +235,7 @@ public struct PosterizeAnimatedModifier: ViewModifier {
     let minLevels: Float
     let maxLevels: Float
     let speed: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(minLevels: Float = 2.0, maxLevels: Float = 8.0, speed: Float = 2.0) {
         self.minLevels = minLevels
@@ -245,7 +245,7 @@ public struct PosterizeAnimatedModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 PosterizeShaderBindings.posterizeAnimated,

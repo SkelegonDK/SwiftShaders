@@ -209,7 +209,7 @@ public struct VignetteFocusModifier: ViewModifier {
 /// Animated breathing vignette
 public struct VignetteAnimatedModifier: ViewModifier {
     let configuration: VignetteConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: VignetteConfiguration = .subtle) {
         self.configuration = configuration
@@ -217,7 +217,7 @@ public struct VignetteAnimatedModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 VignetteShaderBindings.vignetteAnimated,

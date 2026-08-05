@@ -110,7 +110,7 @@ public struct SwirlModifier: ViewModifier {
 /// Animated swirl
 public struct SwirlAnimatedModifier: ViewModifier {
     let configuration: SwirlConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: SwirlConfiguration = .medium) {
         self.configuration = configuration
@@ -118,7 +118,7 @@ public struct SwirlAnimatedModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 SwirlShaderBindings.swirlAnimated,

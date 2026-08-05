@@ -124,7 +124,7 @@ private func colorToFloat3(_ color: Color) -> (Float, Float, Float) {
 /// Sparkle particles
 public struct SparkleModifier: ViewModifier {
     let configuration: ParticlesConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: ParticlesConfiguration = .sparkle) {
         self.configuration = configuration
@@ -134,7 +134,7 @@ public struct SparkleModifier: ViewModifier {
         let (r, g, b) = colorToFloat3(configuration.particleColor)
         
         return TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ParticlesShaderBindings.particlesSparkle,
@@ -150,7 +150,7 @@ public struct SparkleModifier: ViewModifier {
 /// Falling particles (snow/rain)
 public struct FallingParticlesModifier: ViewModifier {
     let configuration: ParticlesConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: ParticlesConfiguration = .snow) {
         self.configuration = configuration
@@ -160,7 +160,7 @@ public struct FallingParticlesModifier: ViewModifier {
         let (r, g, b) = colorToFloat3(configuration.particleColor)
         
         return TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ParticlesShaderBindings.particlesFalling,
@@ -177,7 +177,7 @@ public struct FallingParticlesModifier: ViewModifier {
 /// Rising particles (bubbles/embers)
 public struct RisingParticlesModifier: ViewModifier {
     let configuration: ParticlesConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: ParticlesConfiguration = .embers) {
         self.configuration = configuration
@@ -187,7 +187,7 @@ public struct RisingParticlesModifier: ViewModifier {
         let (r, g, b) = colorToFloat3(configuration.particleColor)
         
         return TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ParticlesShaderBindings.particlesRising,
@@ -205,7 +205,7 @@ public struct RisingParticlesModifier: ViewModifier {
 public struct StarFieldModifier: ViewModifier {
     let density: Float
     let travelSpeed: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(density: Float = 50.0, travelSpeed: Float = 0.1) {
         self.density = density
@@ -214,7 +214,7 @@ public struct StarFieldModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ParticlesShaderBindings.particlesStarField,
@@ -230,7 +230,7 @@ public struct StarFieldModifier: ViewModifier {
 public struct ConfettiModifier: ViewModifier {
     let density: Float
     let fallSpeed: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(density: Float = 20.0, fallSpeed: Float = 0.3) {
         self.density = density
@@ -239,7 +239,7 @@ public struct ConfettiModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ParticlesShaderBindings.particlesConfetti,
@@ -254,7 +254,7 @@ public struct ConfettiModifier: ViewModifier {
 /// Fireflies
 public struct FirefliesModifier: ViewModifier {
     let configuration: ParticlesConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: ParticlesConfiguration = .fireflies) {
         self.configuration = configuration
@@ -264,7 +264,7 @@ public struct FirefliesModifier: ViewModifier {
         let (r, g, b) = colorToFloat3(configuration.particleColor)
         
         return TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ParticlesShaderBindings.particlesFireflies,

@@ -165,7 +165,7 @@ public struct VintagePhotoModifier: ViewModifier {
 /// Aged film effect with grain and scratches
 public struct AgedFilmModifier: ViewModifier {
     let configuration: SepiaConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: SepiaConfiguration = .aged) {
         self.configuration = configuration
@@ -173,7 +173,7 @@ public struct AgedFilmModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 SepiaShaderBindings.agedFilm,

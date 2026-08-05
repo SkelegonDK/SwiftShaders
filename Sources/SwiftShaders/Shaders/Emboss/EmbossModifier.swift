@@ -177,7 +177,7 @@ public struct MetallicEmbossModifier: ViewModifier {
 /// Animated bump map effect
 public struct BumpMapModifier: ViewModifier {
     let depth: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(depth: Float = 1.0) {
         self.depth = depth
@@ -185,7 +185,7 @@ public struct BumpMapModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 EmbossShaderBindings.bumpMap,
