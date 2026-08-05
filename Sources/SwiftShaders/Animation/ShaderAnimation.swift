@@ -237,7 +237,9 @@ public struct ShaderTimeline<Content: View>: View {
     
     private let speed: Double
     private let content: (Double) -> Content
-    
+
+    private var clock = ShaderClock()
+
     /// Creates a shader timeline.
     /// - Parameters:
     ///   - speed: Animation speed multiplier.
@@ -252,7 +254,7 @@ public struct ShaderTimeline<Content: View>: View {
     
     public var body: some View {
         TimelineView(.animation) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate * speed
+            let time = clock.elapsed(to: timeline.date, speed: speed)
             content(time)
         }
     }

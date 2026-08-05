@@ -41,18 +41,23 @@ enum RippleShaderBindings: ShaderFamily {
 ///
 /// ## Animation
 ///
-/// The effect animates based on the `time` parameter. Use a `TimelineView`
-/// or animation timer to drive the animation:
+/// The effect animates based on the `time` parameter, which must be **elapsed
+/// seconds**, not an absolute date. Shader arguments are 32-bit floats, and at
+/// absolute-date magnitude (~7.8×10⁸ seconds since the reference date) a
+/// frame's worth of time rounds away entirely — the effect freezes, and past
+/// ~4×10⁶ it stops rendering at all. See ``ShaderClock``. Measure from a start:
 ///
 /// ```swift
-/// @State private var time: Double = 0.0
+/// @State private var start = Date.now
 ///
 /// TimelineView(.animation) { timeline in
-///     let elapsed = timeline.date.timeIntervalSinceReferenceDate
+///     let elapsed = start.distance(to: timeline.date)
 ///     Image("photo")
 ///         .modifier(RippleModifier(time: elapsed))
 /// }
 /// ```
+///
+/// Or use ``AnimatedRippleModifier``, which keeps its own clock.
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 public struct RippleModifier: ViewModifier {
     
@@ -174,7 +179,9 @@ public struct AnimatedRippleModifier: ViewModifier {
     public var frequency: Double
     public var decay: Double
     public var speed: Double
-    
+
+    private var clock = ShaderClock()
+
     /// Creates an animated ripple modifier.
     /// - Parameters:
     ///   - origin: Center point of the ripple.
@@ -198,7 +205,7 @@ public struct AnimatedRippleModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate * speed
+            let time = clock.elapsed(to: timeline.date, speed: speed)
             content.shaderEffect(
                 RippleShaderBindings.ripple,
                 .float(time),

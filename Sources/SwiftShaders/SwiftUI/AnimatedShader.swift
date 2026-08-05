@@ -24,9 +24,11 @@ public struct AnimatedShaderView<Content: View>: View {
     private let speed: Double
     private let paused: Bool
     private let content: (Double) -> Content
-    
+
+    private var clock = ShaderClock()
+
     // MARK: - Initialization
-    
+
     /// Creates an animated shader view.
     /// - Parameters:
     ///   - speed: Animation speed multiplier.
@@ -46,7 +48,7 @@ public struct AnimatedShaderView<Content: View>: View {
     
     public var body: some View {
         TimelineView(.animation(paused: paused)) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate * speed
+            let time = clock.elapsed(to: timeline.date, speed: speed)
             content(time)
         }
     }
@@ -72,7 +74,9 @@ public struct PulsingShaderView<Content: View>: View {
     
     private let pulseDuration: Double
     private let shader: (Double) -> Content
-    
+
+    private var clock = ShaderClock()
+
     /// Creates a pulsing shader view.
     /// - Parameters:
     ///   - pulseDuration: Duration of one pulse cycle.
@@ -87,7 +91,7 @@ public struct PulsingShaderView<Content: View>: View {
     
     public var body: some View {
         TimelineView(.animation) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate
+            let time = clock.elapsed(to: timeline.date)
             let progress = (sin(time * .pi * 2 / pulseDuration) + 1) / 2
             shader(progress)
         }
@@ -238,7 +242,9 @@ public struct SequencedShaderView<Effect, Content: View>: View {
     private let effectDuration: Double
     private let transition: AnyTransition
     private let content: (Effect, Double) -> Content
-    
+
+    private var clock = ShaderClock()
+
     /// Creates a sequenced shader view.
     /// - Parameters:
     ///   - effects: Array of effects to cycle through.
@@ -259,7 +265,7 @@ public struct SequencedShaderView<Effect, Content: View>: View {
     
     public var body: some View {
         TimelineView(.animation) { timeline in
-            let time = timeline.date.timeIntervalSinceReferenceDate
+            let time = clock.elapsed(to: timeline.date)
             let totalDuration = effectDuration * Double(effects.count)
             let cycleTime = time.truncatingRemainder(dividingBy: totalDuration)
             let index = Int(cycleTime / effectDuration) % effects.count
