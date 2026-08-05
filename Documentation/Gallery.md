@@ -11,7 +11,7 @@ opens it.
 
 ## What it does
 
-- **Browse** 92 effects across 9 categories, with a search field.
+- **Browse** 91 effects across 9 categories, with a search field.
 - **Preview** each one live on a real UI element — card, button, text, icon,
   photo or settings list — so you can see how it behaves on the kind of view
   you'd actually apply it to.
@@ -27,7 +27,7 @@ judging effects that alter transparency.
 ## Adding an effect to the gallery
 
 Everything is driven by one list, `EffectCatalog` in
-`Sources/SwiftShadersGallery/EffectCatalog.swift`. One entry adds the sidebar
+`Sources/SwiftShadersGalleryCore/EffectCatalog.swift`. One entry adds the sidebar
 row, the sliders and the generated code:
 
 ```swift

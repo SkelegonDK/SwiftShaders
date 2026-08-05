@@ -2,7 +2,11 @@
 
 ## Overview
 
-SwiftShaders provides 30+ custom Metal shaders as SwiftUI view modifiers.
+SwiftShaders provides 33 Metal shader modules, exposed as 226 public `View` effect
+methods built on `colorEffect`, `distortionEffect` and `layerEffect`. See the
+README's ["By the numbers"](../README.md#-by-the-numbers) section for the
+up-to-date, test-checked counts, and the [Gallery](Gallery.md) for a browsable,
+previewable list.
 
 ## Blur Effects
 
