@@ -139,25 +139,51 @@ final class EffectCoverageTests: XCTestCase {
     /// fails here.
     static let deliberatelyAbsentCeiling = 121
 
+    /// Equality, not `<=`.
+    ///
+    /// A ceiling the count may sit *below* is a ratchet with slack in it: drain
+    /// ten entries from the backlog and the constant stays at 121, so the next
+    /// ten effects can be added with no gallery entry at all and nothing goes
+    /// red. The slack is invisible — the suite is green the whole time. Pinning
+    /// the number exactly means draining the backlog and lowering the constant
+    /// are the same commit, and the ratchet never holds a debt that has already
+    /// been paid.
     func testTheAbsentCountOnlyEverFalls() {
         let absent = EffectCoverage.absent
 
-        XCTAssertLessThanOrEqual(
+        XCTAssertEqual(
             absent.count, Self.deliberatelyAbsentCeiling,
-            "\(absent.count) effects have no gallery entry, up from \(Self.deliberatelyAbsentCeiling). "
-            + "A new effect needs a gallery entry, or an argued .deliberatelyAbsent reason and a "
-            + "raised ceiling — which is the thing this test exists to make you justify."
+            "\(absent.count) effects have no gallery entry; `deliberatelyAbsentCeiling` says "
+            + "\(Self.deliberatelyAbsentCeiling).\n"
+            + (absent.count > Self.deliberatelyAbsentCeiling
+               ? "The backlog grew. A new effect needs a gallery entry, or an argued "
+                 + ".deliberatelyAbsent reason and a raised ceiling — which is the thing this "
+                 + "test exists to make you justify."
+               : "The backlog shrank, which is good: lower `deliberatelyAbsentCeiling` to "
+                 + "\(absent.count) in this same commit, or the ratchet keeps holding room for "
+                 + "\(Self.deliberatelyAbsentCeiling - absent.count) uncatalogued effects.")
         )
+    }
 
-        if absent.count < Self.deliberatelyAbsentCeiling {
-            // Not a failure: it means somebody drained part of the backlog. Say
-            // so loudly, because the ceiling must come down with it or the
-            // ratchet loosens by exactly as much as was gained.
-            print(
-                "EffectCoverage: absent count is \(absent.count), below the ceiling of "
-                + "\(Self.deliberatelyAbsentCeiling). Lower `deliberatelyAbsentCeiling` to \(absent.count)."
-            )
-        }
+    /// A `.presetOf` row claims its method takes no arguments, and is therefore
+    /// covered by the gallery entry of the method it wraps. That claim is what
+    /// makes it not count against the ratchet — so if it goes unchecked, any
+    /// `.deliberatelyAbsent` row can be relabelled `.presetOf` to buy a slot
+    /// under the ceiling without anything changing in the library.
+    ///
+    /// The claim is checkable from the selector alone: a zero-argument method's
+    /// selector ends in `()`.
+    func testEveryPresetIsAZeroArgumentConvenience() {
+        let parameterised = EffectCoverage.presetBases
+            .filter { !$0.selector.hasSuffix("()") }
+            .map { "\($0.selector) → \($0.base)" }
+
+        XCTAssertEqual(
+            parameterised, [],
+            "These are marked .presetOf but take arguments, so the base method's gallery entry "
+            + "does not cover them. They belong in the Gallery or in the counted backlog:\n"
+            + parameterised.joined(separator: "\n")
+        )
     }
 
     /// Every absence carries one of the documented reasons — a free-text reason

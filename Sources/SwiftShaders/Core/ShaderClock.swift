@@ -24,6 +24,16 @@ import SwiftUI
 /// elapsed seconds measured from a start instant.** No shader argument is ever
 /// derived from an absolute date again.
 ///
+/// ## Identity changes restart the animation, and that is intended
+///
+/// The start instant lives in `@State`, so SwiftUI discards it whenever the
+/// view's *identity* changes — an `.id()` whose value changed, the other branch
+/// of an `if`, a `ForEach` row rekeyed — and the next clock starts from zero,
+/// replaying the effect from its beginning. That is the behaviour to want on
+/// both counts: an effect that has just appeared should start at its beginning
+/// rather than mid-cycle, and restarting is also what keeps elapsed time small,
+/// which is the whole point of the type.
+///
 /// ## Use
 ///
 /// Declare it as a stored property of a `View` or `ViewModifier` — it is a

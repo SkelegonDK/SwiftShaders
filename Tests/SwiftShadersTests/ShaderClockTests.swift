@@ -122,6 +122,58 @@ final class ShaderClockTests: XCTestCase {
         XCTAssertNotEqual(Float(3600.0), Float(3600.0 + frame))
     }
 
+    // MARK: - The rule, over the whole of Sources/
+
+    /// The one occurrence of `timeIntervalSinceReferenceDate` left in `Sources/`
+    /// is the sentence in `ShaderClock`'s documentation explaining why nothing
+    /// may use it.
+    private static let documentedMention = "Sources/SwiftShaders/Core/ShaderClock.swift"
+
+    /// No source file may reach for an absolute date again.
+    ///
+    /// The render tests above prove *one* entry point advances, and 7b fixed
+    /// twenty-two. Six of them are reachable only through code paths no render
+    /// test probes, so for those the fix is asserted by construction rather than
+    /// by pixels: the call that caused the freeze is simply not present in the
+    /// sources any more. A grep is a weak test of behaviour and a strong test of
+    /// a rule, and this is a rule — the defect was never "this shader is wrong",
+    /// it was "an absolute date narrowed to `Float` cannot animate", which is
+    /// true of every call site there will ever be.
+    ///
+    /// Reintroducing one — in a new effect, or by reverting a modifier — fails
+    /// here immediately, naming the file and line, instead of shipping an
+    /// animation that renders a still image.
+    func testNoSourceFileDerivesItsTimeFromAnAbsoluteDate() throws {
+        let root = ShaderCallSiteScanner.repositoryRoot
+        let sources = root.appendingPathComponent("Sources")
+        let enumerator = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil)
+        let needle = "timeIntervalSince" + "ReferenceDate"
+        var offenders: [String] = []
+
+        while let url = enumerator?.nextObject() as? URL {
+            guard url.pathExtension == "swift" else { continue }
+            let relative = url.path.replacingOccurrences(of: root.path + "/", with: "")
+            let lines = try String(contentsOf: url, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+
+            for (offset, line) in lines.enumerated() where line.contains(needle) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                // Allowed only where it is documentation *about* the ban.
+                let documented = relative == Self.documentedMention
+                    && (trimmed.hasPrefix("///") || trimmed.hasPrefix("//"))
+                if !documented { offenders.append("\(relative):\(offset + 1) \(trimmed)") }
+            }
+        }
+
+        XCTAssertEqual(
+            offenders, [],
+            "Absolute reference-date time in Sources/. Narrowed to the 32-bit "
+            + "`Shader.Argument.float` these are bit-identical from frame to frame — the effect "
+            + "renders frozen, and nothing but a render test can see it. Use `ShaderClock.elapsed"
+            + "(to:)`:\n" + offenders.joined(separator: "\n")
+        )
+    }
+
     // MARK: - Fixtures
 
     /// The probe effect: `AnimatedRippleModifier`, one of the entry points that

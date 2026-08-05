@@ -1,6 +1,8 @@
 import Foundation
 
-/// One `func` declared in a `public extension View` block in `Sources/`.
+/// One publicly visible `func` declared in an `extension View` block in
+/// `Sources/` — either because the extension is `public` or because the member
+/// itself is.
 struct PublicViewMethod: Equatable, Comparable, CustomStringConvertible {
     /// Name plus argument labels, e.g. `vignette(radius:softness:intensity:)`.
     /// This is the identity an effect actually has: four of the library's method
@@ -92,23 +94,62 @@ enum PublicViewMethodScanner {
 
     // MARK: - The structural scan
 
+    /// Enters **every** `extension View` block, `public` or not.
+    ///
+    /// Matching the exact literal `public extension View` was a hole big enough
+    /// to drive an effect through: `extension View { public func … }` declares
+    /// exactly as much public API as `public extension View { func … }` does,
+    /// and the scanner never opened the block. So the block is entered either
+    /// way, and publicness is decided per member: the extension's `public`
+    /// applies to all its members, and a member may carry its own.
     static func scan(source: String, file: String) -> [PublicViewMethod] {
         let characters = Array(ShaderCallSiteScanner.strippingComments(from: source))
         var methods: [PublicViewMethod] = []
 
         for start in occurrences(of: Array(extensionHeader), in: characters) {
-            guard let brace = indexOfOpeningBrace(characters, from: start + extensionHeader.count),
+            guard isExtensionOfView(characters, at: start),
+                  let brace = indexOfOpeningBrace(characters, from: start + extensionHeader.count),
                   let end = indexAfterMatchingBrace(characters, openAt: brace)
             else { continue }
-            methods += scanBody(characters, from: brace, to: end, file: file)
+            methods += scanBody(
+                characters, from: brace, to: end, file: file,
+                membersArePublic: isPublicExtension(characters, endingBefore: start)
+            )
         }
         return methods
     }
 
-    private static let extensionHeader = "public extension View"
+    private static let extensionHeader = "extension View"
+
+    /// Rejects the two ways the literal `extension View` can appear without
+    /// being a `View` extension header: as the tail of a longer identifier, and
+    /// as the prefix of `extension ViewModifier` / `extension ViewBuilder`.
+    private static func isExtensionOfView(_ characters: [Character], at start: Int) -> Bool {
+        if start > 0, isIdentifier(characters[start - 1]) { return false }
+        let after = start + extensionHeader.count
+        return after >= characters.count || !isIdentifier(characters[after])
+    }
+
+    /// Whether `public` is the modifier immediately preceding the `extension`
+    /// keyword, in which case every member of the block is public.
+    ///
+    /// Attributes above the declaration end in `)` or a newline, neither of
+    /// which is an identifier character, so `@available(…) extension View` is
+    /// correctly read as non-public.
+    private static func isPublicExtension(_ characters: [Character], endingBefore start: Int) -> Bool {
+        var cursor = start - 1
+        while cursor >= 0, characters[cursor].isWhitespace { cursor -= 1 }
+        var word = ""
+        while cursor >= 0, isIdentifier(characters[cursor]) {
+            word.insert(characters[cursor], at: word.startIndex)
+            cursor -= 1
+        }
+        return word == "public"
+    }
 
     private static func scanBody(
-        _ characters: [Character], from start: Int, to end: Int, file: String
+        _ characters: [Character], from start: Int, to end: Int, file: String,
+        membersArePublic: Bool
     ) -> [PublicViewMethod] {
         var methods: [PublicViewMethod] = []
         var index = start
@@ -122,6 +163,10 @@ enum PublicViewMethodScanner {
                 characters, openAt: head.openParenthesis
             ) else {
                 index = head.openParenthesis + 1
+                continue
+            }
+            guard membersArePublic || declaresPublic(characters, before: index) else {
+                index = close
                 continue
             }
             let parameters = ShaderCallSiteScanner.splitTopLevel(
@@ -142,6 +187,24 @@ enum PublicViewMethodScanner {
             index = close
         }
         return methods
+    }
+
+    /// Whether the declaration whose `func` keyword is at `funcKeyword` carries
+    /// `public` among its modifiers.
+    ///
+    /// Access modifiers sit on the declaration's own line in every style this
+    /// package uses — `public func`, `@discardableResult public func` — so the
+    /// line prefix is the whole search space.
+    private static func declaresPublic(_ characters: [Character], before funcKeyword: Int) -> Bool {
+        var cursor = funcKeyword - 1
+        var modifiers: [Character] = []
+        while cursor >= 0, characters[cursor] != "\n" {
+            modifiers.append(characters[cursor])
+            cursor -= 1
+        }
+        return String(modifiers.reversed())
+            .split(whereSeparator: { !isIdentifier($0) })
+            .contains("public")
     }
 
     /// Matches `func <name>(` — optionally preceded by `public`, and rejecting
@@ -192,14 +255,32 @@ enum PublicViewMethodScanner {
         return nil
     }
 
+    /// The `{` opening the body of the extension whose header ends at `index`.
+    ///
+    /// A `where` clause may stand between the extended type and the body —
+    /// `extension View where Self: Equatable { … }` — and bailing on it made
+    /// the whole block invisible. Anything else between the two is not a header
+    /// this scanner understands, and is refused rather than guessed at.
     private static func indexOfOpeningBrace(_ characters: [Character], from index: Int) -> Int? {
         var cursor = index
         while cursor < characters.count {
             if characters[cursor] == "{" { return cursor }
-            if !characters[cursor].isWhitespace { return nil }
+            if !characters[cursor].isWhitespace {
+                guard startsWord(characters, at: cursor, "where") else { return nil }
+                return characters[cursor...].firstIndex(of: "{")
+            }
             cursor += 1
         }
         return nil
+    }
+
+    private static func startsWord(_ characters: [Character], at index: Int, _ word: String) -> Bool {
+        let letters = Array(word)
+        guard index + letters.count <= characters.count,
+              Array(characters[index..<(index + letters.count)]) == letters
+        else { return false }
+        let after = index + letters.count
+        return after >= characters.count || !isIdentifier(characters[after])
     }
 
     private static func occurrences(of needle: [Character], in characters: [Character]) -> [Int] {
@@ -215,8 +296,14 @@ enum PublicViewMethodScanner {
     // MARK: - The raw yardstick
 
     /// Declarations counted by line shape alone: a line that begins with exactly
-    /// four spaces and `func `, minus the handful of names that are known not to
-    /// be effects.
+    /// four spaces and `func ` — or four spaces, `public`, `func ` — minus the
+    /// handful of names that are known not to be effects.
+    ///
+    /// Both shapes are counted because both declare API. Counting only the
+    /// unqualified one meant a `public func` inside a plain `extension View`
+    /// was missed by the yardstick *and* by the structural scan, so the two
+    /// agreed on a number that was wrong — the failure mode this pairing exists
+    /// to prevent.
     ///
     /// This shares nothing with the structural scan — no comment stripping, no
     /// brace matching, no notion of an extension block — so the two agreeing is
@@ -232,13 +319,25 @@ enum PublicViewMethodScanner {
         "clamped",      // three copies of a numeric helper on Double/Comparable
         "shaderIf",     // ShaderView — conditional wrapper, applies no shader
         "elapsed",      // ShaderClock — time conversion, not a View method
+        "body",         // every ViewModifier's requirement, one per effect type
+        "update",       // MetalHelpers — frame-rate counter
+        "reset",        // MetalHelpers — frame-rate counter
     ]
 
     static func rawDeclarationCount(source: String) -> Int {
         source.split(separator: "\n", omittingEmptySubsequences: false).reduce(0) { total, line in
-            guard line.hasPrefix("    func "), !line.hasPrefix("     ") else { return total }
-            let name = line.dropFirst("    func ".count).prefix { isIdentifier($0) }
-            return nonEffectMembers.contains(String(name)) ? total : total + 1
+            guard let name = declaredName(onLine: line) else { return total }
+            return nonEffectMembers.contains(name) ? total : total + 1
         }
+    }
+
+    /// The name declared by a line of exactly the shape `    func x(` or
+    /// `    public func x(` — four spaces, no more, then the keyword. The
+    /// indentation is what stands in for "a member of a top-level type".
+    private static func declaredName(onLine line: Substring) -> String? {
+        for prefix in ["    func ", "    public func "] where line.hasPrefix(prefix) {
+            return String(line.dropFirst(prefix.count).prefix { isIdentifier($0) })
+        }
+        return nil
     }
 }

@@ -17,6 +17,12 @@ import SwiftShadersGalleryCore
 /// - the output **is not one flat colour** — it did not swallow the view. Pure
 ///   black passes the first check easily, which is why the second exists.
 ///
+/// Across the whole sweep it then asserts both ends of the gap it is measuring
+/// in: the renderer's noise stays far below the change threshold, *and* the
+/// weakest real effect stays far above it. Only the first of those used to be
+/// checked, which left the sweep free to drift down onto its own threshold
+/// without anything going red.
+///
 /// ## The source view, and why it has no gradient
 ///
 /// The first version previewed effects over a four-stop `LinearGradient`. That
@@ -45,6 +51,21 @@ final class GalleryRenderSweepTests: XCTestCase {
     /// is really that small, so this number cannot quietly stop separating them.
     private let changeThreshold = 128
 
+    /// Catalogue entries that render nothing at the parameters the gallery opens
+    /// on, and only become visible further along their sliders.
+    ///
+    /// Both are neutral-by-construction rather than broken: `colorGrading`'s
+    /// defaults are an identity grade (brightness 0, contrast 1, saturation 1…)
+    /// and `levels` defaults to the identity transfer curve. A user opening
+    /// either sees the unmodified view until they move something.
+    ///
+    /// Pinned as a set, not printed, for the same reason
+    /// ``knownTimeIndependentEntries`` is: a list that only gets logged is a
+    /// list nobody reads. A third entry appearing here is a new effect that is
+    /// invisible on arrival, and that is a finding; one disappearing means
+    /// somebody gave it live defaults, and the set must shrink with it.
+    static let knownInvisibleAtDefaults: Set<String> = ["colorGrading", "levels"]
+
     // MARK: - The sweep
 
     func testEveryCatalogueEntryRendersSomethingVisible() throws {
@@ -57,6 +78,7 @@ final class GalleryRenderSweepTests: XCTestCase {
         var blank: [String] = []
         var inert: [String] = []
         var neededStrongerParameters: [String] = []
+        var weakest = (id: "", difference: Int.max)
 
         for effect in EffectCatalog.all {
             // An effect may legitimately be a no-op at its defaults — a strength
@@ -76,17 +98,24 @@ final class GalleryRenderSweepTests: XCTestCase {
             }
             guard let pixels = chosen else { continue }
 
-            if difference(pixels, control) <= changeThreshold {
+            let change = difference(pixels, control)
+            if change < weakest.difference { weakest = (effect.id, change) }
+
+            if change <= changeThreshold {
                 inert.append("\(effect.id) renders identically to the unshaded view")
             } else if pixels.isFlat {
                 blank.append("\(effect.id) renders as one flat colour (\(pixels.colour(x: 1, y: 1)))")
             }
         }
 
-        if !neededStrongerParameters.isEmpty {
-            print("GalleryRenderSweep: invisible at their defaults, visible further along the slider: "
-                  + neededStrongerParameters.sorted().joined(separator: ", "))
-        }
+        XCTAssertEqual(
+            neededStrongerParameters.sorted(), Self.knownInvisibleAtDefaults.sorted(),
+            "The set of entries that show nothing at their default parameters has changed.\n"
+            + "Now invisible at defaults: \(neededStrongerParameters.sorted())\n"
+            + "Expected (knownInvisibleAtDefaults): \(Self.knownInvisibleAtDefaults.sorted())\n"
+            + "An addition is a new effect the gallery opens on as a no-op; a removal means the "
+            + "entry now shows something at its defaults, and belongs out of the set."
+        )
 
         XCTAssertEqual(
             blank, [],
@@ -97,6 +126,25 @@ final class GalleryRenderSweepTests: XCTestCase {
             inert, [],
             "Catalogue entries that change nothing, at any point on their own sliders:\n"
             + inert.joined(separator: "\n")
+        )
+
+        // The noise floor is asserted separately; this is the other side of the
+        // same gap. `worst < 32` says the measurement is quiet; nothing said the
+        // *signal* stays loud. Without this, effects could weaken one by one
+        // until the weakest sat just above 128 and the sweep was riding the
+        // threshold, all while every assertion above stayed green. The weakest
+        // real effect measures 806, so a floor of 4× the threshold leaves the
+        // margin the sweep's design assumes.
+        XCTAssertGreaterThan(
+            weakest.difference, 4 * changeThreshold,
+            "The weakest catalogue entry (\(weakest.id)) differs from the control by only "
+            + "\(weakest.difference), against a change threshold of \(changeThreshold). The sweep "
+            + "still passes, but with almost no room between 'the effect did something' and "
+            + "rasterisation noise."
+        )
+        print(
+            "GalleryRenderSweep: weakest entry is \(weakest.id) at \(weakest.difference), "
+            + "\(weakest.difference / changeThreshold)× the change threshold of \(changeThreshold)."
         )
     }
 

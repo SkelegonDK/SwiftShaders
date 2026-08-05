@@ -119,8 +119,9 @@ inline float bilerpLattice(float a, float b, float c, float d, float2 u) {
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-/// 2D value noise over `hashSine2D`. Was `noise2D` (Frost), `noise` (Sketch,
-/// Particles) and `electricNoise` (Electric).
+/// 2D value noise over `hashSine2D`. Was `noise2D` (Frost), `noise` (Sketch)
+/// and `electricNoise` (Electric). Particles had a `noise` of its own, but it
+/// was deleted as unreferenced rather than migrated here.
 inline float valueNoise2D(float2 p) {
     float2 i = floor(p);
     float2 u = fract(p);
