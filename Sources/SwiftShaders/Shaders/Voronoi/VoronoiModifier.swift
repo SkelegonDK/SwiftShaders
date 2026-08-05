@@ -1,3 +1,4 @@
+// swiftlint:disable file_length — one file per shader family; this family has 14 effects
 import SwiftUI
 
 // MARK: - Bindings
@@ -34,7 +35,22 @@ enum VoronoiShaderBindings: ShaderFamily {
     static let voronoiNoise = ShaderBinding.Color("voronoiNoise", geometry: .boundingRect)
 
     static var bindings: [any AnyShaderBinding] {
-        [voronoiFrost, voronoiStainedGlass, voronoiCaustics, voronoiPlasma, voronoiLava, voronoiLiquid, voronoiDistort, voronoiHoneycomb, voronoiCellular, voronoiShattered, voronoiCrystal, voronoiEdgeGlow, voronoiCells, voronoiNoise]
+        [
+            voronoiFrost,
+            voronoiStainedGlass,
+            voronoiCaustics,
+            voronoiPlasma,
+            voronoiLava,
+            voronoiLiquid,
+            voronoiDistort,
+            voronoiHoneycomb,
+            voronoiCellular,
+            voronoiShattered,
+            voronoiCrystal,
+            voronoiEdgeGlow,
+            voronoiCells,
+            voronoiNoise,
+        ]
     }
 }
 

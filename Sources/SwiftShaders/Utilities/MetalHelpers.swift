@@ -108,6 +108,7 @@ public enum ShaderColor {
     /// - Parameter color: The SwiftUI color.
     /// - Returns: Tuple of (red, green, blue, alpha) values from 0-1.
     @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
+    // swiftlint:disable:next large_tuple — public API; a struct here would be a breaking change for a labelled tuple
     public static func toRGBA(_ color: Color) -> (r: Double, g: Double, b: Double, a: Double) {
         let resolved = color.resolve(in: .init())
         return (

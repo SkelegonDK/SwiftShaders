@@ -6,6 +6,7 @@ import SwiftShaders
 /// Each entry pairs the real `View` extension call with the metadata needed to
 /// drive sliders and regenerate the equivalent Swift source. Adding an effect
 /// is one entry: the sidebar, preview and code panel all read from this list.
+// swiftlint:disable:next type_body_length — a declarative table of 91 entries; splitting it hides the inventory
 public enum EffectCatalog {
 
     public static let all: [Effect] = distortion + color + stylize + retro + light + elements + generative + particles + transitions

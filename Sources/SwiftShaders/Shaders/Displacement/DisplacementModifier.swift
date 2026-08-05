@@ -1,3 +1,4 @@
+// swiftlint:disable file_length — one file per shader family; this family has 21 effects
 import SwiftUI
 
 // MARK: - Bindings
@@ -48,7 +49,29 @@ enum DisplacementShaderBindings: ShaderFamily {
     static let sineDisplacement = ShaderBinding.Distortion("sineDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
 
     static var bindings: [any AnyShaderBinding] {
-        [magneticDisplacement, earthquakeDisplacement, windDisplacement, scanlineJitter, blockDisplacement, breathingDisplacement, blobDisplacement, zigzag, pinch, twirl, spherize, flagWave, lensDistortion, shockwaveDisplacement, underwaterDisplacement, heatDistortion, spiralDisplacement, radialDisplacement, fbmDisplacement, noiseDisplacement, sineDisplacement]
+        [
+            magneticDisplacement,
+            earthquakeDisplacement,
+            windDisplacement,
+            scanlineJitter,
+            blockDisplacement,
+            breathingDisplacement,
+            blobDisplacement,
+            zigzag,
+            pinch,
+            twirl,
+            spherize,
+            flagWave,
+            lensDistortion,
+            shockwaveDisplacement,
+            underwaterDisplacement,
+            heatDistortion,
+            spiralDisplacement,
+            radialDisplacement,
+            fbmDisplacement,
+            noiseDisplacement,
+            sineDisplacement,
+        ]
     }
 }
 

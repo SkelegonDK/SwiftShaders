@@ -16,6 +16,7 @@ opt_in_rules:
 
 excluded:
   - .build
+  - .claude
   - Package.swift
   - DerivedData
 
