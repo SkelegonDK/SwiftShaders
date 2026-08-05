@@ -1,248 +1,120 @@
 import XCTest
-@testable import SwiftShaders
+import SwiftShadersGalleryCore
 
-/// Consistency of the effect catalogues.
+/// Invariants of the Gallery catalogue.
 ///
-/// The same effect is described in several places — `ShaderCatalog` in the
-/// library, `EffectCatalog` in the gallery, the `View` extension defaults, and
-/// the README. Nothing keeps them in agreement, so drift is silent. These tests
-/// lock the invariants that hold today; reconciling the identities and
-/// taxonomies the catalogues still disagree on is Phase 7a's job.
-@available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
+/// These used to be checked by parsing `EffectCatalog.swift` as text, because a
+/// test target cannot import an executable target. The parser could only ever be
+/// as good as its own idea of the file's shape, and it was once wrong about
+/// 89% of it. `SwiftShadersGalleryCore` makes the catalogue importable, so the
+/// assertions now run against the real values — including the ones the parser
+/// could not see at all, such as a range built from a constant.
+///
+/// Whether the catalogue *covers* the library is a different question, asked by
+/// `EffectCoverageTests`.
 final class CatalogConsistencyTests: XCTestCase {
 
-    // MARK: - Gallery catalogue
+    /// `Effect.id` is the `View` extension name and the key the UI selects by,
+    /// so a duplicate silently shadows an effect in the sidebar.
+    func testEffectIdsAreUnique() {
+        let duplicates = Dictionary(grouping: EffectCatalog.all, by: \.id)
+            .filter { $0.value.count > 1 }
+            .map { "\($0.key) declared \($0.value.count)×" }
+            .sorted()
+
+        XCTAssertEqual(duplicates, [], "Duplicate gallery effect ids: \(duplicates)")
+    }
 
     /// A slider whose default sits outside its own range opens the gallery
     /// showing a value the user cannot return to, and generates Swift that does
     /// not match what is on screen.
-    func testEveryGallerySliderDefaultLiesWithinItsRange() throws {
-        let effects = try EffectCatalogSource.parse()
-        var offenders: [String] = []
-
-        for effect in effects {
-            for param in effect.params where !param.isInRange {
-                offenders.append(
-                    "Sources/SwiftShadersGallery/EffectCatalog.swift:\(param.line): "
-                    + "\(effect.id).\(param.label) defaults to \(param.value), outside "
-                    + "\(param.lowerBound)...\(param.upperBound)"
-                )
-            }
+    func testEverySliderDefaultLiesWithinItsRange() {
+        let offenders = EffectCatalog.all.flatMap { effect in
+            effect.params
+                .filter { !$0.range.contains($0.value) }
+                .map { "\(effect.id).\($0.label) defaults to \($0.value), outside \($0.range)" }
         }
 
-        XCTAssertEqual(
-            offenders.count, 0,
-            "Slider defaults outside their declared range:\n" + offenders.joined(separator: "\n")
-        )
+        XCTAssertEqual(offenders, [], "Slider defaults outside their declared range:\n"
+                       + offenders.joined(separator: "\n"))
     }
 
-    /// `Effect.id` is the `View` extension name and the identifier used to
-    /// generate code, so a duplicate silently shadows an effect in the sidebar.
-    func testGalleryEffectIdsAreUnique() throws {
-        let effects = try EffectCatalogSource.parse()
-        let duplicates = Dictionary(grouping: effects, by: \.id)
-            .filter { $0.value.count > 1 }
-            .map { "\($0.key) declared \($0.value.count)× (lines \($0.value.map(\.line)))" }
-            .sorted()
-
-        XCTAssertEqual(duplicates.count, 0, "Duplicate gallery effect ids:\n" + duplicates.joined(separator: "\n"))
-    }
-
-    /// Every parsed effect must carry a display name and a category — an entry
-    /// missing either renders as a blank row.
-    func testEveryGalleryEffectHasANameAndACategory() throws {
-        for effect in try EffectCatalogSource.parse() {
-            XCTAssertFalse(effect.name.isEmpty, "\(effect.id) at line \(effect.line) has no display name")
-            XCTAssertFalse(effect.category.isEmpty, "\(effect.id) at line \(effect.line) has no category")
+    /// Ranges must be non-degenerate, or the slider cannot be moved and the
+    /// parameter is decoration.
+    func testEverySliderRangeIsNonDegenerate() {
+        let offenders = EffectCatalog.all.flatMap { effect in
+            effect.params
+                .filter { $0.range.lowerBound >= $0.range.upperBound }
+                .map { "\(effect.id).\($0.label) has range \($0.range)" }
         }
+
+        XCTAssertEqual(offenders, [], "Degenerate slider ranges: \(offenders)")
     }
 
-    /// The assertions above are only worth the parser's ability to see every
-    /// entry. If the catalogue is ever written in a shape the parser does not
-    /// recognise, this fails rather than quietly checking a subset.
-    func testTheParserSeesEveryDeclarationInTheSource() throws {
-        let effects = try EffectCatalogSource.parse()
-        let raw = try EffectCatalogSource.rawCounts()
-
-        XCTAssertEqual(
-            effects.count, raw.effects,
-            "Parsed \(effects.count) effects but the source declares \(raw.effects). "
-            + "EffectCatalogSource is under-scanning; every other assertion here is weaker than it looks."
-        )
-        XCTAssertEqual(
-            effects.reduce(0) { $0 + $1.params.count }, raw.params,
-            "Parsed \(effects.reduce(0) { $0 + $1.params.count }) params but the source declares \(raw.params)."
-        )
-    }
-
-    // MARK: - Library catalogue
-
-    func testShaderCatalogIdsAreUnique() {
-        let ids = ShaderCatalog.shared.availableShaders.map(\.id)
-        let duplicates = Dictionary(grouping: ids, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
-
-        XCTAssertEqual(duplicates.count, 0, "Duplicate ShaderCatalog ids: \(duplicates)")
-    }
-
-    func testEveryShaderCatalogEntryIsLookedUpByItsOwnId() {
-        for info in ShaderCatalog.shared.availableShaders {
+    /// Every entry is reachable through the lookup the UI uses.
+    func testEveryEffectIsReachableByItsOwnId() {
+        for effect in EffectCatalog.all {
             XCTAssertEqual(
-                ShaderCatalog.shared.shader(named: info.id)?.id, info.id,
-                "\(info.id) is in availableShaders but shader(named:) does not return it"
+                EffectCatalog.effect(id: effect.id)?.id, effect.id,
+                "\(effect.id) is in `all` but `effect(id:)` does not return it"
             )
         }
     }
 
-    func testEveryShaderCatalogEntryHasANameAndDescription() {
-        for info in ShaderCatalog.shared.availableShaders {
-            XCTAssertFalse(info.name.isEmpty, "\(info.id) has no display name")
-            XCTAssertFalse(info.description.isEmpty, "\(info.id) has no description")
+    /// An entry missing a display name or a blurb renders as a blank row.
+    func testEveryEffectHasANameAndABlurb() {
+        for effect in EffectCatalog.all {
+            XCTAssertFalse(effect.name.isEmpty, "\(effect.id) has no display name")
+            XCTAssertFalse(effect.blurb.isEmpty, "\(effect.id) has no blurb")
         }
     }
 
-    // MARK: - The parser itself
+    /// `grouped()` drives the sidebar. Every effect must appear in it exactly
+    /// once, or an effect is unreachable in the UI even though it is catalogued.
+    func testGroupingCoversEveryEffectExactlyOnce() {
+        let grouped = EffectCatalog.grouped().flatMap { $0.1 }.map(\.id).sorted()
 
-    func testParserReadsIdNameAndCategory() {
-        let source = """
-        static let distortion: [Effect] = [
-            Effect("rippleEffect", "Ripple", .distortion, "Concentric water ripples.",
-                   animated: true,
-                   params: [
-                    .init("amplitude", 0...0.1, 0.02, decimals: 3),
-                   ]) { v, p, t in
-        """
-        let effects = EffectCatalogSource.parse(source: source)
-
-        XCTAssertEqual(effects.count, 1)
-        XCTAssertEqual(effects.first?.id, "rippleEffect")
-        XCTAssertEqual(effects.first?.name, "Ripple")
-        XCTAssertEqual(effects.first?.category, "distortion")
+        XCTAssertEqual(grouped, EffectCatalog.all.map(\.id).sorted())
     }
 
-    func testParserReadsRangeAndDefault() {
-        let source = """
-        Effect("e", "E", .color, "d",
-               params: [
-                .init("amplitude", 0...0.1, 0.02, decimals: 3),
-                .init("strength", -1...1, 0.3),
-                .init("segments", 2...24, 6, decimals: 0),
-               ])
-        """
-        let params = EffectCatalogSource.parse(source: source).first?.params ?? []
+    /// The generated code is what a user copies out of the gallery. It must name
+    /// the effect it belongs to and mention every parameter by label.
+    func testGeneratedCodeNamesTheEffectAndAllItsLabelledParameters() {
+        for effect in EffectCatalog.all {
+            let code = effect.code(ParamValues(effect.params))
 
-        XCTAssertEqual(params.count, 3)
-        XCTAssertEqual(params[0].label, "amplitude")
-        XCTAssertEqual(params[0].lowerBound, 0)
-        XCTAssertEqual(params[0].upperBound, 0.1)
-        XCTAssertEqual(params[0].value, 0.02)
-        // Negative lower bounds must survive the `...` split.
-        XCTAssertEqual(params[1].lowerBound, -1)
-        XCTAssertEqual(params[1].upperBound, 1)
-        XCTAssertEqual(params[2].value, 6)
+            XCTAssertTrue(code.contains(".\(effect.id)("), "\(effect.id): generated code does not call it:\n\(code)")
+            for param in effect.params where !param.label.isEmpty {
+                XCTAssertTrue(
+                    code.contains("\(param.label):"),
+                    "\(effect.id): generated code omits the \(param.label) argument:\n\(code)"
+                )
+            }
+            if effect.animated {
+                XCTAssertTrue(code.contains("time: time"), "\(effect.id) is animated but its code passes no time")
+            }
+        }
     }
 
-    func testParserFlagsADefaultOutsideItsRange() {
-        let source = """
-        Effect("e", "E", .color, "d",
-               params: [
-                .init("good", 0...1, 0.5),
-                .init("tooHigh", 0...1, 4),
-                .init("tooLow", 0...1, -2),
-               ])
-        """
-        let params = EffectCatalogSource.parse(source: source).first?.params ?? []
-
-        XCTAssertEqual(params.filter { !$0.isInRange }.map(\.label), ["tooHigh", "tooLow"])
+    /// Integer parameters print without a decimal point, so the generated Swift
+    /// type-checks against an `Int` argument.
+    func testIntegerParametersRenderWithoutADecimalPoint() {
+        for effect in EffectCatalog.all {
+            for param in effect.params where param.isInteger {
+                XCTAssertFalse(
+                    param.literal(param.value).contains("."),
+                    "\(effect.id).\(param.label) is an integer parameter but renders as \(param.literal(param.value))"
+                )
+            }
+        }
     }
 
-    func testParserAttributesParamsToTheEffectTheyFollow() {
-        let source = """
-        Effect("first", "First", .color, "d",
-               params: [
-                .init("a", 0...1, 0.5),
-               ])
-        Effect("second", "Second", .retro, "d",
-               params: [
-                .init("b", 0...1, 0.5),
-                .init("c", 0...1, 0.5),
-               ])
-        """
-        let effects = EffectCatalogSource.parse(source: source)
+    /// `ParamValues` is index-addressed with a fallback, so an out-of-range read
+    /// must not trap — the preview closures index by position.
+    func testParamValuesReadsOutOfRangeIndicesSafely() {
+        let values = ParamValues([EffectParam("a", 0...1, 0.25)])
 
-        XCTAssertEqual(effects.map(\.id), ["first", "second"])
-        XCTAssertEqual(effects[0].params.map(\.label), ["a"])
-        XCTAssertEqual(effects[1].params.map(\.label), ["b", "c"])
-    }
-
-    /// Regression: the parser originally keyed on a line *prefix*, so the 21
-    /// params the catalogue declares inline with their effect were invisible to
-    /// it — and invisible to the completeness guard too, since that counted the
-    /// same way. Both forms must parse, and the value must survive the `)]) {`
-    /// that follows it on an inline single-param line.
-    func testParserReadsAParamWrittenInlineWithItsEffect() {
-        let source = """
-        Effect("twirl", "Twirl", .distortion, "Rotates pixels.",
-               params: [.init("angle", -360...360, 180, decimals: 0)]) { v, p, _ in
-            AnyView(v.twirl(angle: Float(p[0])))
-        },
-        Effect("sepia", "Sepia", .color, "Warm monochrome.",
-               params: [.init("intensity", 0...1, 1)]) { v, p, _ in
-            AnyView(v.sepia(intensity: Float(p[0])))
-        },
-        """
-        let effects = EffectCatalogSource.parse(source: source)
-
-        XCTAssertEqual(effects.map(\.id), ["twirl", "sepia"])
-        XCTAssertEqual(effects[0].params.map(\.label), ["angle"])
-        XCTAssertEqual(effects[0].params.first?.lowerBound, -360)
-        XCTAssertEqual(effects[0].params.first?.value, 180)
-        XCTAssertEqual(effects[1].params.first?.value, 1)
-        XCTAssertEqual(EffectCatalogSource.rawCounts(source: source).params, 2)
-    }
-
-    /// `Effect(` is also a suffix of the call names in the closure bodies, so a
-    /// naive substring search would count `v.rippleEffect(time:)` as an entry.
-    func testParserDoesNotMistakeAnEffectSuffixedCallForAnEntry() {
-        let source = """
-        Effect("rippleEffect", "Ripple", .distortion, "Ripples.",
-               params: [.init("amplitude", 0...1, 0.5)]) { v, p, t in
-            AnyView(v.rippleEffect(time: t, amplitude: p[0]))
-        },
-        """
-        let effects = EffectCatalogSource.parse(source: source)
-
-        XCTAssertEqual(effects.count, 1)
-        XCTAssertEqual(EffectCatalogSource.rawCounts(source: source).effects, 1)
-    }
-
-    func testParserHandlesAnUnlabelledParam() {
-        let source = """
-        Effect("e", "E", .color, "d",
-               params: [
-                .init("", 0...1, 0.5),
-               ])
-        """
-        let params = EffectCatalogSource.parse(source: source).first?.params ?? []
-
-        XCTAssertEqual(params.count, 1)
-        XCTAssertEqual(params.first?.label, "")
-        XCTAssertEqual(params.first?.value, 0.5)
-    }
-
-    func testRawCountsAgreeWithTheParserOnAFixture() {
-        let source = """
-        Effect("first", "First", .color, "d",
-               params: [
-                .init("a", 0...1, 0.5),
-               ])
-        Effect("second", "Second", .retro, "d",
-               params: [
-                .init("b", 0...1, 0.5),
-               ])
-        """
-        let raw = EffectCatalogSource.rawCounts(source: source)
-
-        XCTAssertEqual(raw.effects, 2)
-        XCTAssertEqual(raw.params, 2)
+        XCTAssertEqual(values[0], 0.25)
+        XCTAssertEqual(values[7], 0)
     }
 }

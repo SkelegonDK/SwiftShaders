@@ -221,7 +221,21 @@ public struct SignalInterferenceModifier: ViewModifier {
 
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 public extension View {
-    
+
+    /// Applies a glitch effect to the view.
+    /// - Parameters:
+    ///   - time: Animation time for the glitch.
+    ///   - intensity: Strength of the glitch effect.
+    ///   - blockSize: Size of glitch blocks.
+    /// - Returns: A view with the glitch effect applied.
+    func glitchEffect(
+        time: Double,
+        intensity: Double = 0.5,
+        blockSize: Double = 0.1
+    ) -> some View {
+        modifier(GlitchModifier(time: time, intensity: intensity, blockSize: blockSize))
+    }
+
     /// Applies color-only glitch effect.
     /// - Parameters:
     ///   - time: Animation time.

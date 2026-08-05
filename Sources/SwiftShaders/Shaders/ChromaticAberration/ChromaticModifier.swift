@@ -177,7 +177,19 @@ public struct RGBSplitModifier: ViewModifier {
 
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 public extension View {
-    
+
+    /// Applies chromatic aberration to the view.
+    /// - Parameters:
+    ///   - intensity: Strength of the aberration.
+    ///   - angle: Direction angle of the separation.
+    /// - Returns: A view with chromatic aberration applied.
+    func chromaticAberration(
+        intensity: Double = 0.01,
+        angle: Double = 0.0
+    ) -> some View {
+        modifier(ChromaticModifier(intensity: intensity, angle: angle))
+    }
+
     /// Applies directional chromatic aberration.
     /// - Parameters:
     ///   - intensity: Aberration strength.

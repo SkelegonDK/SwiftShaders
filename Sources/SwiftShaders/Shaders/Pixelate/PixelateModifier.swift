@@ -208,7 +208,14 @@ private extension Double {
 
 @available(iOS 17.0, macOS 14.0, tvOS 17.0, visionOS 1.0, *)
 public extension View {
-    
+
+    /// Applies pixelation to the view.
+    /// - Parameter pixelSize: Size of each pixel block.
+    /// - Returns: A view with pixelation applied.
+    func pixelateEffect(pixelSize: Double = 10.0) -> some View {
+        modifier(PixelateModifier(pixelSize: pixelSize))
+    }
+
     /// Applies pixelation transition effect.
     /// - Parameters:
     ///   - progress: Transition progress.

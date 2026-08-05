@@ -6,11 +6,17 @@ import SwiftShaders
 /// Each entry pairs the real `View` extension call with the metadata needed to
 /// drive sliders and regenerate the equivalent Swift source. Adding an effect
 /// is one entry: the sidebar, preview and code panel all read from this list.
-enum EffectCatalog {
+public enum EffectCatalog {
 
-    static let all: [Effect] = distortion + color + stylize + retro + light + elements + generative + particles + transitions
+    public static let all: [Effect] = distortion + color + stylize + retro + light + elements + generative + particles + transitions
 
-    static func grouped() -> [(EffectCategory, [Effect])] {
+    /// The effect with this id, or `nil`. Ids are the `View` extension names, so
+    /// this is also how a caller goes from generated code back to the entry.
+    public static func effect(id: Effect.ID) -> Effect? {
+        all.first { $0.id == id }
+    }
+
+    public static func grouped() -> [(EffectCategory, [Effect])] {
         EffectCategory.allCases.compactMap { cat in
             let items = all.filter { $0.category == cat }
             return items.isEmpty ? nil : (cat, items)

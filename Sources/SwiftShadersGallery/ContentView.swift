@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftShaders
+import SwiftShadersGalleryCore
 
 struct ContentView: View {
     @State private var selection: Effect.ID = EffectCatalog.all.first!.id
@@ -13,7 +14,7 @@ struct ContentView: View {
     @State private var showsBackdrop = true
 
     private var effect: Effect {
-        EffectCatalog.all.first { $0.id == selection } ?? EffectCatalog.all[0]
+        EffectCatalog.effect(id: selection) ?? EffectCatalog.all[0]
     }
 
     private var binding: Binding<ParamValues> {

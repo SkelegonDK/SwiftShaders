@@ -59,20 +59,24 @@ public enum MetalDevice {
 public enum ShaderDebug {
     
     /// Logs shader library information.
+    ///
+    /// The function names come from the metallib itself rather than a
+    /// hand-written registry: a registry can claim shaders the library does not
+    /// contain, and the previous one did — 19 of its 30 rows named no public
+    /// effect and one named no Metal function at all.
     public static func logShaderInfo() {
         print("=== SwiftShaders Debug Info ===")
         print("Metal Supported: \(MetalDevice.isSupported)")
         print("Device: \(MetalDevice.deviceName)")
-        print("Shader Count: \(ShaderCatalog.shared.count)")
-        print("")
-        
-        print("Available Shaders by Category:")
-        for category in ShaderCatalog.ShaderCategory.allCases {
-            let shaders = ShaderCatalog.shared.shaders(in: category)
-            print("  \(category.rawValue.capitalized): \(shaders.count)")
-            for shader in shaders {
-                print("    - \(shader.name)")
-            }
+
+        let names = MetalDevice.device
+            .flatMap { try? $0.makeDefaultLibrary(bundle: .module) }?
+            .functionNames
+            .sorted() ?? []
+
+        print("Stitchable functions: \(names.count)")
+        for name in names {
+            print("  - \(name)")
         }
         print("===============================")
     }

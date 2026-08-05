@@ -301,13 +301,44 @@ public extension View {
         ))
     }
     
-    /// Applies Voronoi noise.
-    func voronoiNoise(
+    /// Darkens the view with a cellular (Worley) noise field.
+    ///
+    /// The shader computes the distance to the nearest of nine jittered cell
+    /// points and multiplies the existing colour by `1 - distance * intensity`,
+    /// so the content shows through, shaded cell by cell. It is *not* the
+    /// Voronoi module's `voronoiNoise(time:scale:jitter:edgeWidth:)`, which draws
+    /// cell edges from an F2−F1 difference and takes no `intensity`.
+    ///
+    /// - Parameters:
+    ///   - time: Animation time; drifts the cell points.
+    ///   - scale: Cell density — higher means more, smaller cells.
+    ///   - intensity: How dark the cell shading gets.
+    /// - Returns: A view shaded by cellular noise.
+    func cellularNoise(
         time: Double,
         scale: Double = 10.0,
         intensity: Double = 1.0
     ) -> some View {
         modifier(NoiseVoronoiModifier(time: time, scale: scale, intensity: intensity))
+    }
+
+    /// - Warning: Renamed to ``cellularNoise(time:scale:intensity:)`` in 2.0.0.
+    ///
+    /// This name was declared twice, in two different files, bound to two
+    /// different Metal functions. Both spellings accepted `(time:)` and
+    /// `(time:scale:)`, and Swift's fewest-defaults tiebreaker silently resolved
+    /// those to *this* one — so a caller asking for Voronoi cells got cellular
+    /// shading instead, with no diagnostic. The shim keeps the old call
+    /// compiling; it deliberately declares no default values, so the shortened
+    /// forms now go to `Voronoi`'s `voronoiNoise` where they always read as if
+    /// they did.
+    @available(*, deprecated, renamed: "cellularNoise(time:scale:intensity:)")
+    func voronoiNoise(
+        time: Double,
+        scale: Double,
+        intensity: Double
+    ) -> some View {
+        cellularNoise(time: time, scale: scale, intensity: intensity)
     }
     
     /// Applies turbulence distortion.

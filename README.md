@@ -19,7 +19,7 @@
 Unleash the GPU. Every `.metal` function ships precompiled in the package's `default.metallib` and is reached through `ShaderLibrary.bundle(.module)`, so each effect is exposed as a one-line SwiftUI view modifier built on `colorEffect`, `distortionEffect` and `layerEffect` — raw performance with declarative ease.
 
 <p align="center">
-  <strong>🎨 34 Production-Ready Metal Shaders as SwiftUI View Modifiers</strong>
+  <strong>🎨 256 Metal functions · 226 SwiftUI view modifiers · 91 in the interactive gallery</strong>
 </p>
 
 <p align="center">
@@ -31,7 +31,8 @@ Unleash the GPU. Every `.metal` function ships precompiled in the package's `def
 
 <p align="center">
   <a href="#installation">Installation</a> •
-  <a href="#all-34-shaders">All Shaders</a> •
+  <a href="#by-the-numbers">By the numbers</a> •
+  <a href="#the-33-shader-modules">Shader modules</a> •
   <a href="#usage">Usage</a> •
   <a href="#performance">Performance</a>
 </p>
@@ -40,16 +41,36 @@ Unleash the GPU. Every `.metal` function ships precompiled in the package's `def
 
 ## ✨ Why SwiftShaders?
 
-Metal shaders are incredibly powerful for creating stunning visual effects, but they require deep GPU programming knowledge. **SwiftShaders** packages **34 production-ready effects** as simple SwiftUI view modifiers.
+Metal shaders are incredibly powerful for creating stunning visual effects, but they require deep GPU programming knowledge. **SwiftShaders** packages them as SwiftUI view modifiers.
 
 ```swift
 import SwiftShaders
 
 Image("photo")
-    .hologram()
-    .glitch(intensity: 0.3)
+    .hologramEffect(time: time)
+    .glitchEffect(time: time, intensity: 0.3)
     .neonGlow(color: .cyan)
 ```
+
+## 📊 By the numbers
+
+Every figure here is asserted by a test, so it cannot drift from the code:
+
+| | | Enforced by |
+|---|---:|---|
+| `[[stitchable]]` Metal functions in `default.metallib` | **256** | `ShaderBindingTests` (against the generated manifest) |
+| …reachable through a `ShaderBinding` declaration | **207** | `ShaderBindingTests`, `UnboundFunctionInventoryTests` |
+| …with no binding, listed in `Resources/unbound-functions.txt` | **49** | `UnboundFunctionInventoryTests` |
+| Public `View` effect methods | **226** | `EffectCoverageTests` (a scanner over `Sources/`) |
+| …previewable in the Gallery app | **91** | `EffectCoverageTests`, `GalleryRenderSweepTests` |
+| …zero-argument presets of another method | **14** | `EffectCoverageTests` |
+| …with no Gallery entry yet — a tracked backlog | **121** | `EffectCoverageTests` ratchet |
+| Metal source files | **33** | — |
+
+The gap between 226 methods and 91 gallery entries is a real backlog, not a
+rounding error: `Tests/SwiftShadersTests/Support/EffectCoverageLedger.swift`
+names every method and what the Gallery does about it, and a ratchet test stops
+the backlog growing.
 
 ## 📦 Installation
 
@@ -61,7 +82,11 @@ dependencies: [
 ]
 ```
 
-## 🎨 All 34 Shaders
+## 🎨 The 33 shader modules
+
+One `.metal` file per module; each contributes several `[[stitchable]]` functions
+and several view modifiers. The parameters below are indicative — the
+authoritative list is the method signature.
 
 ### 🌈 Visual Effects (8)
 
@@ -133,7 +158,7 @@ struct ContentView: View {
         Image("photo")
             .resizable()
             .scaledToFit()
-            .hologram()
+            .hologramEffect(time: time)
     }
 }
 ```
@@ -142,7 +167,7 @@ struct ContentView: View {
 
 ```swift
 Image("photo")
-    .glitch(intensity: 0.5, speed: 2.0)
+    .glitchEffect(time: time, intensity: 0.5)
     .neonGlow(color: .cyan, intensity: 2.0)
     .vignette(radius: 0.5, softness: 0.3)
 ```
@@ -158,8 +183,8 @@ struct AnimatedView: View {
             let time = startTime.distance(to: timeline.date)
             
             Image("photo")
-                .ripple(time: time, amplitude: 20)
-                .fire(time: time, intensity: 1.0)
+                .rippleEffect(time: time, amplitude: 0.02)
+                .fireEffect(time: time, intensity: 1.0)
         }
     }
 }
@@ -183,7 +208,7 @@ struct InteractiveView: View {
     
     var body: some View {
         Image("photo")
-            .ripple(center: touchPoint, amplitude: 30)
+            .rippleEffect(time: time, origin: touchPoint, amplitude: 0.03)
             .gesture(
                 DragGesture()
                     .onChanged { value in
@@ -221,15 +246,17 @@ Each shader includes:
 - Usage examples
 
 ```swift
-/// Applies holographic rainbow scanning effect
+/// Applies a holographic rainbow scanning effect.
 /// - Parameters:
-///   - intensity: Effect strength (0.0-1.0)
-///   - speed: Animation speed multiplier
-///   - colorShift: Rainbow color rotation
-func hologram(
-    intensity: Float = 1.0,
-    speed: Float = 1.0,
-    colorShift: Float = 0.0
+///   - time: Animation time, normally from a `TimelineView`.
+///   - scanlineIntensity: Scanline strength.
+///   - flickerSpeed: Flicker rate.
+///   - colorShift: Rainbow colour rotation.
+func hologramEffect(
+    time: Double,
+    scanlineIntensity: Double = 0.3,
+    flickerSpeed: Double = 2.0,
+    colorShift: Double = 0.1
 ) -> some View
 ```
 

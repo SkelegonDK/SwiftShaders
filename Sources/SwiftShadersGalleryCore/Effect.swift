@@ -3,26 +3,26 @@ import SwiftUI
 // MARK: - Parameter
 
 /// One tweakable argument of an effect.
-struct EffectParam: Identifiable {
-    let id = UUID()
+public struct EffectParam: Identifiable {
+    public let id = UUID()
 
     /// The Swift argument label. Empty means the argument is unlabelled,
     /// as in `threshold(_ value: Float)`.
-    let label: String
+    public let label: String
 
     /// Name shown next to the slider. Defaults to a prettified `label`.
-    let title: String
+    public let title: String
 
-    let range: ClosedRange<Double>
-    let value: Double
+    public let range: ClosedRange<Double>
+    public let value: Double
 
     /// Decimal places used both for the slider readout and generated code.
-    let decimals: Int
+    public let decimals: Int
 
     /// Whole-number arguments (`octaves: Int`) render without a decimal point.
-    let isInteger: Bool
+    public let isInteger: Bool
 
-    init(
+    public init(
         _ label: String,
         _ range: ClosedRange<Double>,
         _ value: Double,
@@ -49,7 +49,7 @@ struct EffectParam: Identifiable {
     }
 
     /// Renders a value the way it should appear in generated Swift.
-    func literal(_ v: Double) -> String {
+    public func literal(_ v: Double) -> String {
         isInteger ? String(Int(v.rounded())) : String(format: "%.\(decimals)f", v)
     }
 }
@@ -57,40 +57,40 @@ struct EffectParam: Identifiable {
 // MARK: - Values
 
 /// Current slider values for an effect, addressed by index with a safe fallback.
-struct ParamValues {
+public struct ParamValues {
     private var storage: [Double]
 
-    init(_ params: [EffectParam]) {
+    public init(_ params: [EffectParam]) {
         storage = params.map(\.value)
     }
 
-    subscript(i: Int) -> Double {
+    public subscript(i: Int) -> Double {
         get { i < storage.count ? storage[i] : 0 }
         set { if i < storage.count { storage[i] = newValue } }
     }
 
-    var all: [Double] { storage }
+    public var all: [Double] { storage }
 }
 
 // MARK: - Effect
 
 /// A single shader effect the gallery can preview, tweak and emit code for.
-struct Effect: Identifiable {
+public struct Effect: Identifiable {
     /// The view-extension function name — also the identifier used in code output.
-    let id: String
-    let name: String
-    let category: EffectCategory
-    let blurb: String
+    public let id: String
+    public let name: String
+    public let category: EffectCategory
+    public let blurb: String
 
     /// Whether the call takes a leading `time:` argument driven by `TimelineView`.
-    let animated: Bool
+    public let animated: Bool
 
-    let params: [EffectParam]
+    public let params: [EffectParam]
 
     /// Applies the effect to a sample view at the given parameter values and time.
-    let build: (AnyView, ParamValues, Double) -> AnyView
+    public let build: (AnyView, ParamValues, Double) -> AnyView
 
-    init(
+    public init(
         _ id: String,
         _ name: String,
         _ category: EffectCategory,
@@ -110,7 +110,7 @@ struct Effect: Identifiable {
 
     /// The Swift source for this effect at the current values, as shown in the
     /// code panel and placed on the pasteboard.
-    func code(_ values: ParamValues) -> String {
+    public func code(_ values: ParamValues) -> String {
         var args: [String] = []
         if animated { args.append("time: time") }
         for (i, p) in params.enumerated() {
@@ -151,7 +151,7 @@ struct Effect: Identifiable {
 
 // MARK: - Category
 
-enum EffectCategory: String, CaseIterable, Identifiable {
+public enum EffectCategory: String, CaseIterable, Identifiable, Sendable {
     case distortion = "Distortion"
     case color = "Color"
     case stylize = "Stylize"
@@ -162,9 +162,9 @@ enum EffectCategory: String, CaseIterable, Identifiable {
     case particles = "Particles"
     case transition = "Transitions"
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var symbol: String {
+    public var symbol: String {
         switch self {
         case .distortion: "water.waves"
         case .color: "paintpalette"

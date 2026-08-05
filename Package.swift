@@ -15,6 +15,14 @@ let package = Package(
             name: "SwiftShaders",
             targets: ["SwiftShaders"]
         ),
+        // The gallery's catalogue, split out of the executable so that tests can
+        // `import` it. A test target cannot import an executable target, which
+        // is why the catalogue used to be checked by parsing its own source text
+        // — a guard that could only ever be as good as the parser.
+        .library(
+            name: "SwiftShadersGalleryCore",
+            targets: ["SwiftShadersGalleryCore"]
+        ),
         .executable(
             name: "SwiftShadersGallery",
             targets: ["SwiftShadersGallery"]
@@ -42,16 +50,31 @@ let package = Package(
                 // `MTLFunction` exposes no parameter list, so nothing else can
                 // tell a call site how many arguments its function expects.
                 .copy("Resources/shader-signatures.tsv"),
+                // The stitchable functions no `ShaderBinding` declaration
+                // reaches — generated from the metallib and the Swift sources
+                // together, so the list cannot go stale unnoticed. Declared as a
+                // resource because it lives in the target directory; nothing
+                // reads it at runtime.
+                .copy("Resources/unbound-functions.txt"),
             ]
         ),
+        // Effect descriptions, the catalogue and the sample views the gallery
+        // previews effects on. Importable, so the catalogue-consistency and
+        // render-sweep tests exercise the real values rather than a text parse.
+        .target(
+            name: "SwiftShadersGalleryCore",
+            dependencies: ["SwiftShaders"],
+            path: "Sources/SwiftShadersGalleryCore"
+        ),
+        // The app shell: `@main`, the browsing UI, the pasteboard.
         .executableTarget(
             name: "SwiftShadersGallery",
-            dependencies: ["SwiftShaders"],
+            dependencies: ["SwiftShadersGalleryCore"],
             path: "Sources/SwiftShadersGallery"
         ),
         .testTarget(
             name: "SwiftShadersTests",
-            dependencies: ["SwiftShaders"]
+            dependencies: ["SwiftShaders", "SwiftShadersGalleryCore"]
         ),
     ]
 )
