@@ -113,7 +113,7 @@ public struct KaleidoscopeModifier: ViewModifier {
 /// Animated kaleidoscope
 public struct KaleidoscopeAnimatedModifier: ViewModifier {
     let configuration: KaleidoscopeConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: KaleidoscopeConfiguration = .classic) {
         self.configuration = configuration
@@ -121,7 +121,7 @@ public struct KaleidoscopeAnimatedModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 KaleidoscopeShaderBindings.kaleidoscopeAnimated,

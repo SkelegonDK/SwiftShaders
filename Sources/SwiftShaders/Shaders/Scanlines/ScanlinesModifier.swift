@@ -131,7 +131,7 @@ public struct ScanlinesModifier: ViewModifier {
 /// Interlaced scanlines (animated)
 public struct ScanlinesInterlacedModifier: ViewModifier {
     let configuration: ScanlinesConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: ScanlinesConfiguration = .retro) {
         self.configuration = configuration
@@ -139,7 +139,7 @@ public struct ScanlinesInterlacedModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ScanlinesShaderBindings.scanlinesInterlaced,
@@ -154,7 +154,7 @@ public struct ScanlinesInterlacedModifier: ViewModifier {
 /// VHS-style scanlines with noise
 public struct ScanlinesVHSModifier: ViewModifier {
     let configuration: ScanlinesConfiguration
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: ScanlinesConfiguration = .vhs) {
         self.configuration = configuration
@@ -162,7 +162,7 @@ public struct ScanlinesVHSModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ScanlinesShaderBindings.scanlinesVHS,
@@ -199,7 +199,7 @@ public struct ScanlinesLCDModifier: ViewModifier {
 public struct ScanlinesRollingModifier: ViewModifier {
     let speed: Float
     let intensity: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(speed: Float = 0.5, intensity: Float = 0.3) {
         self.speed = speed
@@ -208,7 +208,7 @@ public struct ScanlinesRollingModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ScanlinesShaderBindings.scanlinesRolling,

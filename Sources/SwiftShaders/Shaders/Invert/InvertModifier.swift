@@ -191,7 +191,7 @@ public struct SolarizeModifier: ViewModifier {
 public struct InvertAnimatedModifier: ViewModifier {
     let speed: Float
     let waveScale: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(speed: Float = 2.0, waveScale: Float = 5.0) {
         self.speed = speed
@@ -200,7 +200,7 @@ public struct InvertAnimatedModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 InvertShaderBindings.invertAnimated,

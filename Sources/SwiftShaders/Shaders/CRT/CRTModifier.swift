@@ -111,7 +111,7 @@ public struct CRTModifier: ViewModifier {
     let configuration: CRTConfiguration
     let style: CRTStyle
     
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(configuration: CRTConfiguration = .classic, style: CRTStyle = .classic) {
         self.configuration = configuration
@@ -121,7 +121,7 @@ public struct CRTModifier: ViewModifier {
     public func body(content: Content) -> some View {
         TimelineView(.animation(minimumInterval: 1/60, paused: !configuration.flickerEnabled)) { timeline in
             let time = configuration.flickerEnabled ? 
-                startTime.distance(to: timeline.date) : 0.0
+                clock.elapsed(to: timeline.date) : 0.0
             
             content.shaderEffect(
                 CRTShaderBindings.crtEffect,

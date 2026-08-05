@@ -41,9 +41,9 @@ public struct ShaderView<Content: View>: View {
     private let isAnimated: Bool
     private let animationSpeed: Double
     private let content: () -> Content
-    
-    @State private var animationTime: Double = 0
-    
+
+    private var clock = ShaderClock()
+
     // MARK: - Initialization
     
     /// Creates a shader view with the specified preset.
@@ -70,11 +70,15 @@ public struct ShaderView<Content: View>: View {
         Group {
             if isAnimated {
                 TimelineView(.animation) { timeline in
-                    let time = timeline.date.timeIntervalSinceReferenceDate * animationSpeed
+                    let time = clock.elapsed(to: timeline.date, speed: animationSpeed)
                     applyShader(time: time)
                 }
             } else {
-                applyShader(time: animationTime)
+                // `isAnimated: false` means exactly that: the effect is rendered
+                // at its start, and nothing advances it. This used to read an
+                // `@State` that nothing ever wrote, which said the same thing at
+                // greater length.
+                applyShader(time: 0)
             }
         }
     }
@@ -207,10 +211,11 @@ public struct ShaderPreview<Content: View>: View {
     @State private var selectedShader: String = "ripple"
     @State private var intensity: Double = 0.5
     @State private var isAnimating: Bool = true
-    @State private var time: Double = 0
-    
+
+    private var clock = ShaderClock()
+
     private let content: () -> Content
-    
+
     private let shaderNames = [
         "ripple", "chromatic", "glitch", "pixelate", "wave",
         "noise", "dissolve", "hologram", "fire", "water", "electric"
@@ -227,11 +232,13 @@ public struct ShaderPreview<Content: View>: View {
             Group {
                 if isAnimating {
                     TimelineView(.animation) { timeline in
-                        let time = timeline.date.timeIntervalSinceReferenceDate
+                        let time = clock.elapsed(to: timeline.date)
                         previewContent(time: time)
                     }
                 } else {
-                    previewContent(time: time)
+                    // Same as `ShaderView`: the toggle is off, so the preview
+                    // holds at the start of the animation.
+                    previewContent(time: 0)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: 300)

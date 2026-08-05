@@ -214,7 +214,7 @@ public struct ThresholdAnimatedModifier: ViewModifier {
     let configuration: ThresholdConfiguration
     let speed: Float
     let amplitude: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(
         configuration: ThresholdConfiguration = .binary,
@@ -231,7 +231,7 @@ public struct ThresholdAnimatedModifier: ViewModifier {
         let (hr, hg, hb) = colorToFloat3(configuration.highColor)
         
         return TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 ThresholdShaderBindings.thresholdAnimated,

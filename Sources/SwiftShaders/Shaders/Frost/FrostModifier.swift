@@ -104,7 +104,7 @@ public struct FrostedGlassModifier: ViewModifier {
 public struct IceCrystalsModifier: ViewModifier {
     let crystalDensity: Float
     let shimmerSpeed: Float
-    @State private var startTime = Date.now
+    private var clock = ShaderClock()
     
     public init(crystalDensity: Float = 10.0, shimmerSpeed: Float = 2.0) {
         self.crystalDensity = crystalDensity
@@ -113,7 +113,7 @@ public struct IceCrystalsModifier: ViewModifier {
     
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
-            let time = startTime.distance(to: timeline.date)
+            let time = clock.elapsed(to: timeline.date)
             
             content.shaderEffect(
                 FrostShaderBindings.iceCrystals,
