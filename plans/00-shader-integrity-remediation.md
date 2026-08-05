@@ -739,6 +739,58 @@ Not given its own phase because it blocks nothing and conflicts with nothing. Do
 
 The shader path is synchronous and non-throwing end to end, so no resilience module can attach to it even in principle. Deleting collapses nine ways to apply an effect down to four. Update `README.md:19` at the same time.
 
+### ✅ APPENDIX RESULTS — executed 2026-08-05 (commit `3e6f6b2`)
+
+**Done. 505 lines deleted — the table's 487 plus the 18-line `SwiftShadersInfo` block.**
+
+Every symbol was reference-swept individually before deletion, not taken on the table's word. All 15
+public symbols came back with references that were *only* the declaration itself or a mention inside
+its own doc comment. Swept across `Sources Tests Examples Documentation Templates README.md CHANGELOG.md`.
+
+| | |
+|---|---|
+| `swift test` | **178 tests, 0 failures** (unchanged) |
+| `Shader.compile(as:)` rejections | **0 of 208** (unchanged) |
+| `make build` | clean, Gallery links and packages |
+| `grep -c 'opacity(0.99)' Sources/` | **0** |
+| `grep -c 'applyMetalShader\|CircuitBreaker\|EventBus' Sources/ README.md` | **0** |
+| stitchable functions | **256** (untouched) |
+
+**Two traps worth recording for anyone re-reading the table:**
+
+1. **`Core/ShaderModifier.swift` is not homogeneous.** The table justifies it with "`ShaderModifierProtocol`
+   has zero conformances," but the protocol is 12 of its 335 lines. The file also defines four other
+   public types — `BaseShaderModifier`, `AnimatedShaderModifier`, `ConditionalShaderModifier`,
+   `ChainedShaderModifier`. Each was swept separately and each was genuinely unreferenced, so the whole
+   file went; but the stated reason only covered a twelfth of it.
+
+2. **`AnimatedShaderModifier` appears to have a second definition** at `Templates/ModifierTemplate.swift:65`
+   with a different init (`speed:`). It is not a conflict and not a call site: `Templates/` and `Examples/`
+   live outside `Sources/`, so `Package.swift` never compiles them. Verified against the target paths
+   before deleting — a naive grep makes this look load-bearing.
+
+**⚠️ This removes `public` API — breaking for any external consumer.** Nothing in this repo used any of
+it. Removed: `SwiftShadersCircuitBreaker`, `CircuitError`, `SwiftShadersRetryPolicy`, `SwiftShadersEventBus`,
+`SwiftShadersMetricsCollector`, `SwiftShadersErrorHandler`, `MetalToSwiftUIBridge`, `applyMetalShader(_:)`,
+`ShaderModifierProtocol`, `BaseShaderModifier`, `AnimatedShaderModifier`, `ConditionalShaderModifier`,
+`ChainedShaderModifier`, `ShaderConfig`, `SwiftShadersInfo`, `SwiftShaders.version`.
+
+Both version constants are now gone rather than reconciled — they disagreed (1.0.0 / 2.0.0), nothing read
+either, and SPM resolves the version from the git tag. The library no longer vends a version constant at
+all. If one is wanted back, that is a Phase 8 documentation decision, not a restoration of these files.
+
+`README.md:19` now describes the real mechanism — `ShaderLibrary.bundle(.module)` over
+`colorEffect`/`distortionEffect`/`layerEffect` — instead of the Bridge, which applied no shader.
+The README's "34 Production-Ready Metal Shaders" claim was left alone **deliberately**: the count
+drift across five inventories is 7a's subject and should be fixed once, there.
+
+**🔴 Found while here, not fixed: `CHANGELOG.md` is boilerplate from an unrelated project.** Its 1.0.0
+entries describe type-safe navigation, `NavigationStack` integration, deep linking and routers — SwiftRouter,
+not SwiftShaders — and its compare/release links point at `github.com/muhittincamdali/SwiftRouter` (note
+also that the README and podspec use `muhittinpalamutcu/SwiftShaders`, a *different* org, so the URLs are
+wrong twice over). No breaking-change entry was written for this deletion, because writing an accurate
+entry into the wrong product's changelog compounds the problem. → **Phase 8 documentation work.**
+
 ---
 
 ## Appendix — Corrections to the earlier architecture review
