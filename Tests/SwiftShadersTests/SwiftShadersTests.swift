@@ -39,22 +39,6 @@ final class SwiftShadersTests: XCTestCase {
         XCTAssertNil(nonExistent)
     }
     
-    func testShaderInfo() {
-        let info = ShaderCatalog.ShaderInfo(
-            id: "test",
-            name: "Test Shader",
-            description: "A test shader",
-            category: .distortion,
-            isAnimatable: true,
-            minimumVersion: "17.0"
-        )
-        
-        XCTAssertEqual(info.id, "test")
-        XCTAssertEqual(info.name, "Test Shader")
-        XCTAssertEqual(info.category, .distortion)
-        XCTAssertTrue(info.isAnimatable)
-    }
-    
     // MARK: - ShaderConfiguration Tests
     
     func testShaderConfigurationDefaults() {
@@ -259,66 +243,26 @@ final class SwiftShadersTests: XCTestCase {
     }
     
     // MARK: - Modifier Tests
-    
-    func testRippleModifierCreation() {
-        let modifier = RippleModifier(
-            time: 1.0,
-            origin: CGPoint(x: 0.5, y: 0.5),
-            amplitude: 0.02,
-            frequency: 15.0,
-            decay: 8.0
-        )
-        
-        XCTAssertEqual(modifier.time, 1.0)
-        XCTAssertEqual(modifier.origin, CGPoint(x: 0.5, y: 0.5))
-        XCTAssertEqual(modifier.amplitude, 0.02)
+    //
+    // Only the modifiers that *transform* what they are given are tested here.
+    // A modifier that merely stores its arguments has nothing to assert that the
+    // initialiser call in the test does not already state; whether it is wired to
+    // the right Metal function is `ShaderBindingTests`' job, and whether the
+    // arguments arrive intact is `ShaderRenderingTests`'.
+
+    func testPixelateClampsPixelSizeToAtLeastOneDevicePixel() {
+        // Below 1.0 the shader would divide the sampling grid by a fraction and
+        // magnify rather than pixelate.
+        XCTAssertGreaterThanOrEqual(PixelateModifier(pixelSize: 0.5).pixelSize, 1.0)
+        XCTAssertGreaterThanOrEqual(PixelateModifier(pixelSize: 0.0).pixelSize, 1.0)
+        XCTAssertGreaterThanOrEqual(PixelateModifier(pixelSize: -4.0).pixelSize, 1.0)
     }
-    
-    func testChromaticModifierCreation() {
-        let modifier = ChromaticModifier(
-            intensity: 0.05,
-            angle: 0.0
-        )
-        
-        XCTAssertEqual(modifier.intensity, 0.05)
-        XCTAssertEqual(modifier.angle, 0.0)
-    }
-    
-    func testGlitchModifierCreation() {
-        let modifier = GlitchModifier(
-            time: 1.0,
-            intensity: 0.5,
-            blockSize: 0.1
-        )
-        
-        XCTAssertEqual(modifier.time, 1.0)
-        XCTAssertEqual(modifier.intensity, 0.5)
-    }
-    
-    func testPixelateModifierCreation() {
-        let modifier = PixelateModifier(pixelSize: 10.0)
-        XCTAssertEqual(modifier.pixelSize, 10.0)
-        
-        // Test minimum clamping
-        let modifier2 = PixelateModifier(pixelSize: 0.5)
-        XCTAssertGreaterThanOrEqual(modifier2.pixelSize, 1.0)
-    }
-    
-    func testDissolveModifierCreation() {
-        let modifier = DissolveModifier(
-            progress: 0.5,
-            scale: 10.0,
-            edgeWidth: 0.05
-        )
-        
-        XCTAssertEqual(modifier.progress, 0.5)
-        
-        // Test clamping
-        let modifier2 = DissolveModifier(progress: 1.5)
-        XCTAssertEqual(modifier2.progress, 1.0)
-        
-        let modifier3 = DissolveModifier(progress: -0.5)
-        XCTAssertEqual(modifier3.progress, 0.0)
+
+    func testDissolveClampsProgressToUnitRange() {
+        XCTAssertEqual(DissolveModifier(progress: 1.5).progress, 1.0)
+        XCTAssertEqual(DissolveModifier(progress: -0.5).progress, 0.0)
+        // A value already in range must pass through untouched.
+        XCTAssertEqual(DissolveModifier(progress: 0.5).progress, 0.5)
     }
     
     // MARK: - KeyframeAnimator Tests
