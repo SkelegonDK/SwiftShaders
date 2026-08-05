@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum ColorGradingShaderBindings: ShaderFamily {
+    /// `half4 filmEmulation(float2,half4,float4,float,float)`
+    static let filmEmulation = ShaderBinding.Color("filmEmulation", geometry: .boundingRect)
+    /// `half4 vibrance(float2,half4,float4,float)`
+    static let vibrance = ShaderBinding.Color("vibrance", geometry: .boundingRect)
+    /// `half4 splitToning(float2,half4,float4,float,float,float,float,float)`
+    static let splitToning = ShaderBinding.Color("splitToning", geometry: .boundingRect)
+    /// `half4 curves(float2,half4,float4,float,float,float)`
+    static let curves = ShaderBinding.Color("curves", geometry: .boundingRect)
+    /// `half4 levels(float2,half4,float4,float,float,float,float,float)`
+    static let levels = ShaderBinding.Color("levels", geometry: .boundingRect)
+    /// `half4 colorGrading(float2,half4,float4,float,float,float,float,float,float)`
+    static let colorGrading = ShaderBinding.Color("colorGrading", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [filmEmulation, vibrance, splitToning, curves, levels, colorGrading]
+    }
+}
+
 // MARK: - ColorGradingModifier
 
 /// A view modifier for professional color grading controls.
@@ -63,16 +85,14 @@ public struct ColorGradingModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.colorGrading(
-                .boundingRect,
-                .float(brightness),
-                .float(contrast),
-                .float(saturation),
-                .float(hueShift),
-                .float(temperature),
-                .float(tint)
-            )
+        content.shaderEffect(
+            ColorGradingShaderBindings.colorGrading,
+            .float(brightness),
+            .float(contrast),
+            .float(saturation),
+            .float(hueShift),
+            .float(temperature),
+            .float(tint)
         )
     }
 }
@@ -105,15 +125,13 @@ public struct LevelsModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.levels(
-                .boundingRect,
-                .float(inputBlack),
-                .float(inputWhite),
-                .float(gamma),
-                .float(outputBlack),
-                .float(outputWhite)
-            )
+        content.shaderEffect(
+            ColorGradingShaderBindings.levels,
+            .float(inputBlack),
+            .float(inputWhite),
+            .float(gamma),
+            .float(outputBlack),
+            .float(outputWhite)
         )
     }
 }
@@ -140,13 +158,11 @@ public struct CurvesModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.curves(
-                .boundingRect,
-                .float(shadowLift),
-                .float(midtoneContrast),
-                .float(highlightCompress)
-            )
+        content.shaderEffect(
+            ColorGradingShaderBindings.curves,
+            .float(shadowLift),
+            .float(midtoneContrast),
+            .float(highlightCompress)
         )
     }
 }
@@ -179,15 +195,13 @@ public struct SplitToningModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.splitToning(
-                .boundingRect,
-                .float(shadowHue),
-                .float(shadowSaturation),
-                .float(highlightHue),
-                .float(highlightSaturation),
-                .float(balance)
-            )
+        content.shaderEffect(
+            ColorGradingShaderBindings.splitToning,
+            .float(shadowHue),
+            .float(shadowSaturation),
+            .float(highlightHue),
+            .float(highlightSaturation),
+            .float(balance)
         )
     }
 }
@@ -207,8 +221,9 @@ public struct VibranceModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.vibrance(.boundingRect, .float(amount))
+        content.shaderEffect(
+            ColorGradingShaderBindings.vibrance,
+            .float(amount)
         )
     }
 }
@@ -236,12 +251,10 @@ public struct FilmEmulationModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.filmEmulation(
-                .boundingRect,
-                .float(filmType.rawValue),
-                .float(intensity)
-            )
+        content.shaderEffect(
+            ColorGradingShaderBindings.filmEmulation,
+            .float(filmType.rawValue),
+            .float(intensity)
         )
     }
 }

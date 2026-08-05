@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum MosaicShaderBindings: ShaderFamily {
+    /// `half4 mosaicDiamond(float2,layer,float2,float,float,float3)`
+    static let mosaicDiamond = ShaderBinding.Layer("mosaicDiamond", geometry: .viewSize, sampling: .perSite)
+    /// `half4 mosaicBrick(float2,layer,float2,float,float,float,float3)`
+    static let mosaicBrick = ShaderBinding.Layer("mosaicBrick", geometry: .viewSize, sampling: .perSite)
+    /// `half4 mosaicVoronoi(float2,layer,float2,float,float,float3,float)`
+    static let mosaicVoronoi = ShaderBinding.Layer("mosaicVoronoi", geometry: .viewSize, sampling: .perSite)
+    /// `half4 mosaicHexagon(float2,layer,float2,float,float,float3)`
+    static let mosaicHexagon = ShaderBinding.Layer("mosaicHexagon", geometry: .viewSize, sampling: .perSite)
+    /// `half4 mosaicSquare(float2,layer,float2,float,float,float3)`
+    static let mosaicSquare = ShaderBinding.Layer("mosaicSquare", geometry: .viewSize, sampling: .perSite)
+
+    static var bindings: [any AnyShaderBinding] {
+        [mosaicDiamond, mosaicBrick, mosaicVoronoi, mosaicHexagon, mosaicSquare]
+    }
+}
+
 // MARK: - Mosaic Configuration
 
 /// Mosaic tile pattern types
@@ -88,18 +108,13 @@ public struct MosaicSquareModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.groutColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.mosaicSquare(
-                        .float2(proxy.size),
-                        .float(configuration.tileSize),
-                        .float(configuration.groutWidth),
-                        .float3(r, g, b)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize), height: CGFloat(configuration.tileSize))
-                )
-            }
+        return content.shaderEffect(
+            MosaicShaderBindings.mosaicSquare,
+            .float(configuration.tileSize),
+            .float(configuration.groutWidth),
+            .float3(r, g, b),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize), height: CGFloat(configuration.tileSize))
+        )
     }
 }
 
@@ -114,18 +129,13 @@ public struct MosaicHexagonModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.groutColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.mosaicHexagon(
-                        .float2(proxy.size),
-                        .float(configuration.tileSize),
-                        .float(configuration.groutWidth),
-                        .float3(r, g, b)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize * 2), height: CGFloat(configuration.tileSize * 2))
-                )
-            }
+        return content.shaderEffect(
+            MosaicShaderBindings.mosaicHexagon,
+            .float(configuration.tileSize),
+            .float(configuration.groutWidth),
+            .float3(r, g, b),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize * 2), height: CGFloat(configuration.tileSize * 2))
+        )
     }
 }
 
@@ -140,19 +150,14 @@ public struct MosaicVoronoiModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.groutColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.mosaicVoronoi(
-                        .float2(proxy.size),
-                        .float(configuration.tileSize),
-                        .float(configuration.groutWidth),
-                        .float3(r, g, b),
-                        .float(configuration.randomness)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize * 2), height: CGFloat(configuration.tileSize * 2))
-                )
-            }
+        return content.shaderEffect(
+            MosaicShaderBindings.mosaicVoronoi,
+            .float(configuration.tileSize),
+            .float(configuration.groutWidth),
+            .float3(r, g, b),
+            .float(configuration.randomness),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize * 2), height: CGFloat(configuration.tileSize * 2))
+        )
     }
 }
 
@@ -167,19 +172,14 @@ public struct MosaicBrickModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.groutColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.mosaicBrick(
-                        .float2(proxy.size),
-                        .float(configuration.brickWidth),
-                        .float(configuration.brickHeight),
-                        .float(configuration.groutWidth),
-                        .float3(r, g, b)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.brickWidth), height: CGFloat(configuration.brickHeight))
-                )
-            }
+        return content.shaderEffect(
+            MosaicShaderBindings.mosaicBrick,
+            .float(configuration.brickWidth),
+            .float(configuration.brickHeight),
+            .float(configuration.groutWidth),
+            .float3(r, g, b),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.brickWidth), height: CGFloat(configuration.brickHeight))
+        )
     }
 }
 
@@ -194,18 +194,13 @@ public struct MosaicDiamondModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.groutColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.mosaicDiamond(
-                        .float2(proxy.size),
-                        .float(configuration.tileSize),
-                        .float(configuration.groutWidth),
-                        .float3(r, g, b)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize * 2), height: CGFloat(configuration.tileSize * 2))
-                )
-            }
+        return content.shaderEffect(
+            MosaicShaderBindings.mosaicDiamond,
+            .float(configuration.tileSize),
+            .float(configuration.groutWidth),
+            .float3(r, g, b),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.tileSize * 2), height: CGFloat(configuration.tileSize * 2))
+        )
     }
 }
 

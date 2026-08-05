@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum PosterizeShaderBindings: ShaderFamily {
+    /// `half4 posterizeAnimated(float2,half4,float,float,float,float)`
+    static let posterizeAnimated = ShaderBinding.Color("posterizeAnimated", geometry: .plain)
+    /// `half4 posterizeTritone(float2,half4,float3,float3,float3,float)`
+    static let posterizeTritone = ShaderBinding.Color("posterizeTritone", geometry: .plain)
+    /// `half4 posterizeDuotone(float2,half4,float3,float3,float)`
+    static let posterizeDuotone = ShaderBinding.Color("posterizeDuotone", geometry: .plain)
+    /// `half4 posterizePopArt(float2,half4,float2,float,float,float)`
+    static let posterizePopArt = ShaderBinding.Color("posterizePopArt", geometry: .viewSize)
+    /// `half4 posterizeChannels(float2,half4,float,float,float)`
+    static let posterizeChannels = ShaderBinding.Color("posterizeChannels", geometry: .plain)
+    /// `half4 posterize(float2,half4,float)`
+    static let posterize = ShaderBinding.Color("posterize", geometry: .plain)
+
+    static var bindings: [any AnyShaderBinding] {
+        [posterizeAnimated, posterizeTritone, posterizeDuotone, posterizePopArt, posterizeChannels, posterize]
+    }
+}
+
 // MARK: - Posterize Configuration
 
 /// Posterize effect style presets
@@ -106,12 +128,10 @@ public struct PosterizeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.posterize(
-                    .float(levels)
-                )
-            )
+        content.shaderEffect(
+            PosterizeShaderBindings.posterize,
+            .float(levels)
+        )
     }
 }
 
@@ -124,14 +144,12 @@ public struct PosterizeChannelsModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.posterizeChannels(
-                    .float(configuration.levelsRed),
-                    .float(configuration.levelsGreen),
-                    .float(configuration.levelsBlue)
-                )
-            )
+        content.shaderEffect(
+            PosterizeShaderBindings.posterizeChannels,
+            .float(configuration.levelsRed),
+            .float(configuration.levelsGreen),
+            .float(configuration.levelsBlue)
+        )
     }
 }
 
@@ -144,17 +162,12 @@ public struct PosterizePopArtModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.posterizePopArt(
-                        .float2(proxy.size),
-                        .float(configuration.levels),
-                        .float(configuration.saturationBoost),
-                        .float(configuration.contrastBoost)
-                    )
-                )
-            }
+        content.shaderEffect(
+            PosterizeShaderBindings.posterizePopArt,
+            .float(configuration.levels),
+            .float(configuration.saturationBoost),
+            .float(configuration.contrastBoost)
+        )
     }
 }
 
@@ -174,14 +187,12 @@ public struct PosterizeDuotoneModifier: ViewModifier {
         let (dr, dg, db) = colorToFloat3(darkColor)
         let (lr, lg, lb) = colorToFloat3(lightColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.posterizeDuotone(
-                    .float3(dr, dg, db),
-                    .float3(lr, lg, lb),
-                    .float(levels)
-                )
-            )
+        return content.shaderEffect(
+            PosterizeShaderBindings.posterizeDuotone,
+            .float3(dr, dg, db),
+            .float3(lr, lg, lb),
+            .float(levels)
+        )
     }
 }
 
@@ -209,15 +220,13 @@ public struct PosterizeTritoneModifier: ViewModifier {
         let (mr, mg, mb) = colorToFloat3(midColor)
         let (hr, hg, hb) = colorToFloat3(highlightColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.posterizeTritone(
-                    .float3(sr, sg, sb),
-                    .float3(mr, mg, mb),
-                    .float3(hr, hg, hb),
-                    .float(levels)
-                )
-            )
+        return content.shaderEffect(
+            PosterizeShaderBindings.posterizeTritone,
+            .float3(sr, sg, sb),
+            .float3(mr, mg, mb),
+            .float3(hr, hg, hb),
+            .float(levels)
+        )
     }
 }
 
@@ -238,15 +247,13 @@ public struct PosterizeAnimatedModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .colorEffect(
-                    ShaderLibrary.swiftShaders.posterizeAnimated(
-                        .float(time),
-                        .float(minLevels),
-                        .float(maxLevels),
-                        .float(speed)
-                    )
-                )
+            content.shaderEffect(
+                PosterizeShaderBindings.posterizeAnimated,
+                .float(time),
+                .float(minLevels),
+                .float(maxLevels),
+                .float(speed)
+            )
         }
     }
 }

@@ -145,7 +145,7 @@ enum ShaderCallSiteScanner {
     }
 
     /// Index one past the `)` that closes the `(` at `openAt`.
-    private static func indexAfterMatchingParenthesis(_ characters: [Character], openAt: Int) -> Int? {
+    static func indexAfterMatchingParenthesis(_ characters: [Character], openAt: Int) -> Int? {
         var depth = 0
         var index = openAt
         while index < characters.count {
@@ -163,7 +163,7 @@ enum ShaderCallSiteScanner {
     ///
     /// `.float2(Float(a.x), Float(a.y))` is one argument, not two. Getting this
     /// wrong inflates the argument count and turns a broken call site green.
-    private static func splitTopLevel(_ characters: [Character]) -> [String] {
+    static func splitTopLevel(_ characters: [Character]) -> [String] {
         var parts: [String] = []
         var depth = 0
         var current = ""
@@ -189,7 +189,7 @@ enum ShaderCallSiteScanner {
         "float2", "float3", "float4", "float", "color", "image", "data",
     ]
 
-    private static func argumentKind(of expression: String) -> String {
+    static func argumentKind(of expression: String) -> String {
         guard expression.hasPrefix(".") else { return expression }
         let body = expression.dropFirst()
         for factory in argumentFactories.sorted(by: { $0.count > $1.count }) where body.hasPrefix(factory) {

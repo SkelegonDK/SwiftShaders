@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum ScanlinesShaderBindings: ShaderFamily {
+    /// `half4 scanlinesDiagonal(float2,half4,float2,float,float,float)`
+    static let scanlinesDiagonal = ShaderBinding.Color("scanlinesDiagonal", geometry: .viewSize)
+    /// `half4 scanlinesRolling(float2,half4,float2,float,float,float,float)`
+    static let scanlinesRolling = ShaderBinding.Color("scanlinesRolling", geometry: .viewSize)
+    /// `half4 scanlinesLCD(float2,half4,float2,float,float,float)`
+    static let scanlinesLCD = ShaderBinding.Color("scanlinesLCD", geometry: .viewSize)
+    /// `half4 scanlinesVHS(float2,half4,float2,float,float,float)`
+    static let scanlinesVHS = ShaderBinding.Color("scanlinesVHS", geometry: .viewSize)
+    /// `half4 scanlinesInterlaced(float2,half4,float2,float,float,float)`
+    static let scanlinesInterlaced = ShaderBinding.Color("scanlinesInterlaced", geometry: .viewSize)
+    /// `half4 scanlines(float2,half4,float2,float,float,float)`
+    static let scanlines = ShaderBinding.Color("scanlines", geometry: .viewSize)
+
+    static var bindings: [any AnyShaderBinding] {
+        [scanlinesDiagonal, scanlinesRolling, scanlinesLCD, scanlinesVHS, scanlinesInterlaced, scanlines]
+    }
+}
+
 // MARK: - Scanlines Configuration
 
 /// Scanline style presets
@@ -97,17 +119,12 @@ public struct ScanlinesModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.scanlines(
-                        .float2(proxy.size),
-                        .float(configuration.lineCount),
-                        .float(configuration.intensity),
-                        .float(configuration.brightness)
-                    )
-                )
-            }
+        content.shaderEffect(
+            ScanlinesShaderBindings.scanlines,
+            .float(configuration.lineCount),
+            .float(configuration.intensity),
+            .float(configuration.brightness)
+        )
     }
 }
 
@@ -124,17 +141,12 @@ public struct ScanlinesInterlacedModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.scanlinesInterlaced(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.lineCount),
-                            .float(configuration.intensity)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ScanlinesShaderBindings.scanlinesInterlaced,
+                .float(time),
+                .float(configuration.lineCount),
+                .float(configuration.intensity)
+            )
         }
     }
 }
@@ -152,17 +164,12 @@ public struct ScanlinesVHSModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.scanlinesVHS(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.intensity),
-                            .float(configuration.noiseAmount)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ScanlinesShaderBindings.scanlinesVHS,
+                .float(time),
+                .float(configuration.intensity),
+                .float(configuration.noiseAmount)
+            )
         }
     }
 }
@@ -179,17 +186,12 @@ public struct ScanlinesLCDModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.scanlinesLCD(
-                        .float2(proxy.size),
-                        .float(configuration.pixelSize),
-                        .float(1.0), // gap size
-                        .float(configuration.intensity)
-                    )
-                )
-            }
+        content.shaderEffect(
+            ScanlinesShaderBindings.scanlinesLCD,
+            .float(configuration.pixelSize),
+            .float(1.0), // gap size
+            .float(configuration.intensity)
+        )
     }
 }
 
@@ -208,18 +210,13 @@ public struct ScanlinesRollingModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.scanlinesRolling(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(speed),
-                            .float(0.1), // width
-                            .float(intensity)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ScanlinesShaderBindings.scanlinesRolling,
+                .float(time),
+                .float(speed),
+                .float(0.1), // width
+                .float(intensity)
+            )
         }
     }
 }
@@ -237,17 +234,12 @@ public struct ScanlinesDiagonalModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.scanlinesDiagonal(
-                        .float2(proxy.size),
-                        .float(angle),
-                        .float(spacing),
-                        .float(intensity)
-                    )
-                )
-            }
+        content.shaderEffect(
+            ScanlinesShaderBindings.scanlinesDiagonal,
+            .float(angle),
+            .float(spacing),
+            .float(intensity)
+        )
     }
 }
 

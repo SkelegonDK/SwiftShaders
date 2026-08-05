@@ -1,5 +1,29 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum BlurShaderBindings: ShaderFamily {
+    /// `half4 softGlow(float2,half4,float4,float,float)`
+    static let softGlow = ShaderBinding.Color("softGlow", geometry: .boundingRect)
+    /// `half4 frostBlur(float2,half4,float4,float,float,float)`
+    static let frostBlur = ShaderBinding.Color("frostBlur", geometry: .boundingRect)
+    /// `half4 depthOfFieldBlur(float2,half4,float4,float,float,float)`
+    static let depthOfFieldBlur = ShaderBinding.Color("depthOfFieldBlur", geometry: .boundingRect)
+    /// `half4 tiltShiftBlur(float2,half4,float4,float,float,float)`
+    static let tiltShiftBlur = ShaderBinding.Color("tiltShiftBlur", geometry: .boundingRect)
+    /// `half4 motionBlur(float2,half4,float4,float,float)`
+    static let motionBlur = ShaderBinding.Color("motionBlur", geometry: .boundingRect)
+    /// `half4 radialBlur(float2,half4,float4,float,float,float)`
+    static let radialBlur = ShaderBinding.Color("radialBlur", geometry: .boundingRect)
+    /// `half4 boxBlurSimulation(float2,half4,float4,float)`
+    static let boxBlurSimulation = ShaderBinding.Color("boxBlurSimulation", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [softGlow, frostBlur, depthOfFieldBlur, tiltShiftBlur, motionBlur, radialBlur, boxBlurSimulation]
+    }
+}
+
 // MARK: - BlurModifier
 
 /// A view modifier that applies blur simulation effects.
@@ -32,8 +56,9 @@ public struct BlurModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.boxBlurSimulation(.boundingRect, .float(radius))
+        content.shaderEffect(
+            BlurShaderBindings.boxBlurSimulation,
+            .float(radius)
         )
     }
 }
@@ -60,13 +85,11 @@ public struct RadialBlurModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.radialBlur(
-                .boundingRect,
-                .float(center.x),
-                .float(center.y),
-                .float(strength)
-            )
+        content.shaderEffect(
+            BlurShaderBindings.radialBlur,
+            .float(center.x),
+            .float(center.y),
+            .float(strength)
         )
     }
 }
@@ -90,12 +113,10 @@ public struct MotionBlurModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.motionBlur(
-                .boundingRect,
-                .float(angle),
-                .float(strength)
-            )
+        content.shaderEffect(
+            BlurShaderBindings.motionBlur,
+            .float(angle),
+            .float(strength)
         )
     }
 }
@@ -126,13 +147,11 @@ public struct TiltShiftModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.tiltShiftBlur(
-                .boundingRect,
-                .float(focusY),
-                .float(focusWidth),
-                .float(blurStrength)
-            )
+        content.shaderEffect(
+            BlurShaderBindings.tiltShiftBlur,
+            .float(focusY),
+            .float(focusWidth),
+            .float(blurStrength)
         )
     }
 }
@@ -163,13 +182,11 @@ public struct DepthOfFieldModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.depthOfFieldBlur(
-                .boundingRect,
-                .float(focalDistance),
-                .float(aperture),
-                .float(maxBlur)
-            )
+        content.shaderEffect(
+            BlurShaderBindings.depthOfFieldBlur,
+            .float(focalDistance),
+            .float(aperture),
+            .float(maxBlur)
         )
     }
 }
@@ -200,13 +217,11 @@ public struct FrostModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.frostBlur(
-                .boundingRect,
-                .float(time),
-                .float(frostAmount),
-                .float(grainSize)
-            )
+        content.shaderEffect(
+            BlurShaderBindings.frostBlur,
+            .float(time),
+            .float(frostAmount),
+            .float(grainSize)
         )
     }
 }
@@ -230,12 +245,10 @@ public struct SoftGlowModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.softGlow(
-                .boundingRect,
-                .float(intensity),
-                .float(threshold)
-            )
+        content.shaderEffect(
+            BlurShaderBindings.softGlow,
+            .float(intensity),
+            .float(threshold)
         )
     }
 }

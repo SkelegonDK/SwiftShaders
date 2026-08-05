@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum FrostShaderBindings: ShaderFamily {
+    /// `half4 frozenSurface(float2,half4,float2,float,float)`
+    static let frozenSurface = ShaderBinding.Color("frozenSurface", geometry: .viewSize)
+    /// `half4 breathFrost(float2,half4,float2,float2,float,float)`
+    static let breathFrost = ShaderBinding.Color("breathFrost", geometry: .viewSize)
+    /// `half4 windowFrost(float2,layer,float2,float,float)`
+    static let windowFrost = ShaderBinding.Layer("windowFrost", geometry: .viewSize, sampling: .perSite)
+    /// `half4 iceCrystals(float2,half4,float2,float,float,float)`
+    static let iceCrystals = ShaderBinding.Color("iceCrystals", geometry: .viewSize)
+    /// `half4 frostedGlass(float2,layer,float2,float,float,float)`
+    static let frostedGlass = ShaderBinding.Layer("frostedGlass", geometry: .viewSize, sampling: .perSite)
+
+    static var bindings: [any AnyShaderBinding] {
+        [frozenSurface, breathFrost, windowFrost, iceCrystals, frostedGlass]
+    }
+}
+
 // MARK: - Frost Configuration
 
 /// Frost effect style presets
@@ -70,18 +90,13 @@ public struct FrostedGlassModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.frostedGlass(
-                        .float2(proxy.size),
-                        .float(configuration.amount),
-                        .float(configuration.crystalScale),
-                        .float(configuration.blurAmount)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.blurAmount * 2), height: CGFloat(configuration.blurAmount * 2))
-                )
-            }
+        content.shaderEffect(
+            FrostShaderBindings.frostedGlass,
+            .float(configuration.amount),
+            .float(configuration.crystalScale),
+            .float(configuration.blurAmount),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.blurAmount * 2), height: CGFloat(configuration.blurAmount * 2))
+        )
     }
 }
 
@@ -100,17 +115,12 @@ public struct IceCrystalsModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.iceCrystals(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(crystalDensity),
-                            .float(shimmerSpeed)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                FrostShaderBindings.iceCrystals,
+                .float(time),
+                .float(crystalDensity),
+                .float(shimmerSpeed)
+            )
         }
     }
 }
@@ -126,17 +136,12 @@ public struct WindowFrostModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.windowFrost(
-                        .float2(proxy.size),
-                        .float(coverage),
-                        .float(thickness)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(thickness), height: CGFloat(thickness))
-                )
-            }
+        content.shaderEffect(
+            FrostShaderBindings.windowFrost,
+            .float(coverage),
+            .float(thickness),
+            maxSampleOffset: CGSize(width: CGFloat(thickness), height: CGFloat(thickness))
+        )
     }
 }
 
@@ -152,17 +157,12 @@ public struct BreathFrostModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.breathFrost(
-                        .float2(proxy.size),
-                        .float2(Float(center.x), Float(center.y)),
-                        .float(size),
-                        .float(fadeAmount)
-                    )
-                )
-            }
+        content.shaderEffect(
+            FrostShaderBindings.breathFrost,
+            .float2(Float(center.x), Float(center.y)),
+            .float(size),
+            .float(fadeAmount)
+        )
     }
 }
 
@@ -177,16 +177,11 @@ public struct FrozenSurfaceModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.frozenSurface(
-                        .float2(proxy.size),
-                        .float(crackDensity),
-                        .float(thickness)
-                    )
-                )
-            }
+        content.shaderEffect(
+            FrostShaderBindings.frozenSurface,
+            .float(crackDensity),
+            .float(thickness)
+        )
     }
 }
 

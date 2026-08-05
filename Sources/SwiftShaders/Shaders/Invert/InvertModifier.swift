@@ -5,6 +5,32 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum InvertShaderBindings: ShaderFamily {
+    /// `half4 invertRegion(float2,half4,float2,float2,float,float)`
+    static let invertRegion = ShaderBinding.Color("invertRegion", geometry: .viewSize)
+    /// `half4 invertAnimated(float2,half4,float2,float,float,float)`
+    static let invertAnimated = ShaderBinding.Color("invertAnimated", geometry: .viewSize)
+    /// `half4 solarize(float2,half4,float)`
+    static let solarize = ShaderBinding.Color("solarize", geometry: .plain)
+    /// `half4 xrayEffect(float2,half4,float,float)`
+    static let xrayEffect = ShaderBinding.Color("xrayEffect", geometry: .plain)
+    /// `half4 negativeFilm(float2,half4,float2,float)`
+    static let negativeFilm = ShaderBinding.Color("negativeFilm", geometry: .viewSize)
+    /// `half4 invertChannels(float2,half4,float,float,float)`
+    static let invertChannels = ShaderBinding.Color("invertChannels", geometry: .plain)
+    /// `half4 invertSmart(float2,half4,float)`
+    static let invertSmart = ShaderBinding.Color("invertSmart", geometry: .plain)
+    /// `half4 invert(float2,half4,float)`
+    static let invert = ShaderBinding.Color("invert", geometry: .plain)
+
+    static var bindings: [any AnyShaderBinding] {
+        [invertRegion, invertAnimated, solarize, xrayEffect, negativeFilm, invertChannels, invertSmart, invert]
+    }
+}
+
 // MARK: - Invert Configuration
 
 /// Invert effect style presets
@@ -69,12 +95,10 @@ public struct InvertModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.invert(
-                    .float(amount)
-                )
-            )
+        content.shaderEffect(
+            InvertShaderBindings.invert,
+            .float(amount)
+        )
     }
 }
 
@@ -87,12 +111,10 @@ public struct SmartInvertModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.invertSmart(
-                    .float(threshold)
-                )
-            )
+        content.shaderEffect(
+            InvertShaderBindings.invertSmart,
+            .float(threshold)
+        )
     }
 }
 
@@ -105,14 +127,12 @@ public struct ChannelInvertModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.invertChannels(
-                    .float(configuration.invertRed ? 1.0 : 0.0),
-                    .float(configuration.invertGreen ? 1.0 : 0.0),
-                    .float(configuration.invertBlue ? 1.0 : 0.0)
-                )
-            )
+        content.shaderEffect(
+            InvertShaderBindings.invertChannels,
+            .float(configuration.invertRed ? 1.0 : 0.0),
+            .float(configuration.invertGreen ? 1.0 : 0.0),
+            .float(configuration.invertBlue ? 1.0 : 0.0)
+        )
     }
 }
 
@@ -125,15 +145,10 @@ public struct NegativeFilmModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.negativeFilm(
-                        .float2(proxy.size),
-                        .float(orangeMask)
-                    )
-                )
-            }
+        content.shaderEffect(
+            InvertShaderBindings.negativeFilm,
+            .float(orangeMask)
+        )
     }
 }
 
@@ -148,13 +163,11 @@ public struct XRayModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.xrayEffect(
-                    .float(intensity),
-                    .float(edgeEnhance)
-                )
-            )
+        content.shaderEffect(
+            InvertShaderBindings.xrayEffect,
+            .float(intensity),
+            .float(edgeEnhance)
+        )
     }
 }
 
@@ -167,12 +180,10 @@ public struct SolarizeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.solarize(
-                    .float(threshold)
-                )
-            )
+        content.shaderEffect(
+            InvertShaderBindings.solarize,
+            .float(threshold)
+        )
     }
 }
 
@@ -191,17 +202,12 @@ public struct InvertAnimatedModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.invertAnimated(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(speed),
-                            .float(waveScale)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                InvertShaderBindings.invertAnimated,
+                .float(time),
+                .float(speed),
+                .float(waveScale)
+            )
         }
     }
 }
@@ -223,17 +229,12 @@ public struct InvertRegionModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.invertRegion(
-                        .float2(proxy.size),
-                        .float2(Float(center.x), Float(center.y)),
-                        .float(radius),
-                        .float(feather)
-                    )
-                )
-            }
+        content.shaderEffect(
+            InvertShaderBindings.invertRegion,
+            .float2(Float(center.x), Float(center.y)),
+            .float(radius),
+            .float(feather)
+        )
     }
 }
 

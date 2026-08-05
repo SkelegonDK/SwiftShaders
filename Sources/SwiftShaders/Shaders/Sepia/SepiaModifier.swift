@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum SepiaShaderBindings: ShaderFamily {
+    /// `half4 fadedMemory(float2,half4,float2,float,float3)`
+    static let fadedMemory = ShaderBinding.Color("fadedMemory", geometry: .viewSize)
+    /// `half4 crossProcess(float2,half4,float)`
+    static let crossProcess = ShaderBinding.Color("crossProcess", geometry: .plain)
+    /// `half4 polaroid(float2,half4,float2,float,float)`
+    static let polaroid = ShaderBinding.Color("polaroid", geometry: .viewSize)
+    /// `half4 agedFilm(float2,half4,float2,float,float,float,float)`
+    static let agedFilm = ShaderBinding.Color("agedFilm", geometry: .viewSize)
+    /// `half4 vintagePhoto(float2,half4,float2,float,float,float)`
+    static let vintagePhoto = ShaderBinding.Color("vintagePhoto", geometry: .viewSize)
+    /// `half4 sepia(float2,half4,float)`
+    static let sepia = ShaderBinding.Color("sepia", geometry: .plain)
+
+    static var bindings: [any AnyShaderBinding] {
+        [fadedMemory, crossProcess, polaroid, agedFilm, vintagePhoto, sepia]
+    }
+}
+
 // MARK: - Sepia Configuration
 
 /// Vintage effect style presets
@@ -115,12 +137,10 @@ public struct SepiaModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.sepia(
-                    .float(intensity)
-                )
-            )
+        content.shaderEffect(
+            SepiaShaderBindings.sepia,
+            .float(intensity)
+        )
     }
 }
 
@@ -133,17 +153,12 @@ public struct VintagePhotoModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.vintagePhoto(
-                        .float2(proxy.size),
-                        .float(configuration.fadeAmount),
-                        .float(configuration.warmth),
-                        .float(configuration.contrast)
-                    )
-                )
-            }
+        content.shaderEffect(
+            SepiaShaderBindings.vintagePhoto,
+            .float(configuration.fadeAmount),
+            .float(configuration.warmth),
+            .float(configuration.contrast)
+        )
     }
 }
 
@@ -160,18 +175,13 @@ public struct AgedFilmModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.agedFilm(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.grainIntensity),
-                            .float(configuration.scratchIntensity),
-                            .float(configuration.fadeAmount)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                SepiaShaderBindings.agedFilm,
+                .float(time),
+                .float(configuration.grainIntensity),
+                .float(configuration.scratchIntensity),
+                .float(configuration.fadeAmount)
+            )
         }
     }
 }
@@ -185,14 +195,11 @@ public struct PolaroidModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.polaroid(
-                    .float2(1, 1),
-                    .float(configuration.exposure),
-                    .float(configuration.saturation)
-                )
-            )
+        content.shaderEffect(
+            SepiaShaderBindings.polaroid,
+            .float(configuration.exposure),
+            .float(configuration.saturation)
+        )
     }
 }
 
@@ -205,12 +212,10 @@ public struct CrossProcessModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.crossProcess(
-                    .float(intensity)
-                )
-            )
+        content.shaderEffect(
+            SepiaShaderBindings.crossProcess,
+            .float(intensity)
+        )
     }
 }
 
@@ -225,16 +230,11 @@ public struct FadedMemoryModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.tintColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.fadedMemory(
-                        .float2(proxy.size),
-                        .float(configuration.fadeAmount),
-                        .float3(r, g, b)
-                    )
-                )
-            }
+        return content.shaderEffect(
+            SepiaShaderBindings.fadedMemory,
+            .float(configuration.fadeAmount),
+            .float3(r, g, b)
+        )
     }
 }
 

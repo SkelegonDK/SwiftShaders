@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum PixelateShaderBindings: ShaderFamily {
+    /// `half4 ledMatrix(float2,half4,float4,float,float,float)`
+    static let ledMatrix = ShaderBinding.Color("ledMatrix", geometry: .boundingRect)
+    /// `half4 dotMatrix(float2,half4,float4,float,float)`
+    static let dotMatrix = ShaderBinding.Color("dotMatrix", geometry: .boundingRect)
+    /// `float2 diamondPixelate(float2,float4,float)`
+    static let diamondPixelate = ShaderBinding.Distortion("diamondPixelate", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 hexPixelate(float2,float4,float)`
+    static let hexPixelate = ShaderBinding.Distortion("hexPixelate", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 pixelateTransition(float2,float4,float,float)`
+    static let pixelateTransition = ShaderBinding.Distortion("pixelateTransition", geometry: .boundingRect, sampling: .perSite)
+    /// `float2 pixelate(float2,float4,float)`
+    static let pixelate = ShaderBinding.Distortion("pixelate", geometry: .boundingRect, sampling: .perSite)
+
+    static var bindings: [any AnyShaderBinding] {
+        [ledMatrix, dotMatrix, diamondPixelate, hexPixelate, pixelateTransition, pixelate]
+    }
+}
+
 // MARK: - PixelateModifier
 
 /// A view modifier that applies pixelation effects.
@@ -32,8 +54,9 @@ public struct PixelateModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.pixelate(.boundingRect, .float(pixelSize)),
+        content.shaderEffect(
+            PixelateShaderBindings.pixelate,
+            .float(pixelSize),
             maxSampleOffset: CGSize(width: CGFloat(pixelSize), height: CGFloat(pixelSize))
         )
     }
@@ -58,12 +81,10 @@ public struct PixelateTransitionModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.pixelateTransition(
-                .boundingRect,
-                .float(progress),
-                .float(maxPixelSize)
-            ),
+        content.shaderEffect(
+            PixelateShaderBindings.pixelateTransition,
+            .float(progress),
+            .float(maxPixelSize),
             maxSampleOffset: CGSize(width: CGFloat(maxPixelSize), height: CGFloat(maxPixelSize))
         )
     }
@@ -84,9 +105,9 @@ public struct HexPixelateModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.hexPixelate(.boundingRect, .float(hexSize)),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            PixelateShaderBindings.hexPixelate,
+            .float(hexSize)
         )
     }
 }
@@ -106,9 +127,9 @@ public struct DiamondPixelateModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.diamondPixelate(.boundingRect, .float(diamondSize)),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            PixelateShaderBindings.diamondPixelate,
+            .float(diamondSize)
         )
     }
 }
@@ -132,12 +153,10 @@ public struct DotMatrixModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.dotMatrix(
-                .boundingRect,
-                .float(dotSize),
-                .float(dotSpacing)
-            )
+        content.shaderEffect(
+            PixelateShaderBindings.dotMatrix,
+            .float(dotSize),
+            .float(dotSpacing)
         )
     }
 }
@@ -168,13 +187,11 @@ public struct LEDMatrixModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.ledMatrix(
-                .boundingRect,
-                .float(ledSize),
-                .float(ledGap),
-                .float(brightness)
-            )
+        content.shaderEffect(
+            PixelateShaderBindings.ledMatrix,
+            .float(ledSize),
+            .float(ledGap),
+            .float(brightness)
         )
     }
 }

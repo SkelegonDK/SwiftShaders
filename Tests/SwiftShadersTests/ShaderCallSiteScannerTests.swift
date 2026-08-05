@@ -164,21 +164,8 @@ final class ShaderCallSiteScannerTests: XCTestCase {
         XCTAssertEqual(sites.first?.argumentKinds, ["float2"])
     }
 
-    // MARK: - Scanning the repository
-
-    func testScanningTheRepositoryFindsCallSitesInEveryShaderModule() throws {
-        let sites = try ShaderCallSiteScanner.scanSources()
-
-        XCTAssertGreaterThan(
-            sites.count, 100,
-            "Found \(sites.count) call sites in Sources/. A collapse to zero means the "
-            + "scanner lost the repository root, not that the bindings are clean."
-        )
-        XCTAssertFalse(
-            sites.contains { $0.effectMethod == .unknown },
-            "Every call site must be attributable to an effect method; unattributed "
-            + "sites would be silently skipped by the arity and kind checks: "
-            + sites.filter { $0.effectMethod == .unknown }.map(\.description).joined(separator: ", ")
-        )
-    }
+    // Since Phase 5 the repository is expected to contain zero raw call
+    // sites; that lint (with its own anti-vacuity guard) lives in
+    // ShaderBindingTests.testNoRawCallSitesRemainOutsideTheBindingModule.
+    // The fixture tests above are what keep the scanner itself honest.
 }

@@ -1,5 +1,57 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum DisplacementShaderBindings: ShaderFamily {
+    /// `float2 magneticDisplacement(float2,float4,float,float,float,float)`
+    static let magneticDisplacement = ShaderBinding.Distortion("magneticDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 earthquakeDisplacement(float2,float4,float,float,float,float)`
+    static let earthquakeDisplacement = ShaderBinding.Distortion("earthquakeDisplacement", geometry: .boundingRect, sampling: .fixed(width: 30, height: 30))
+    /// `float2 windDisplacement(float2,float4,float,float,float,float)`
+    static let windDisplacement = ShaderBinding.Distortion("windDisplacement", geometry: .boundingRect, sampling: .fixed(width: 40, height: 40))
+    /// `float2 scanlineJitter(float2,float4,float,float,float,float)`
+    static let scanlineJitter = ShaderBinding.Distortion("scanlineJitter", geometry: .boundingRect, sampling: .fixed(width: 50, height: 5))
+    /// `float2 blockDisplacement(float2,float4,float,float,float,float)`
+    static let blockDisplacement = ShaderBinding.Distortion("blockDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 breathingDisplacement(float2,float4,float,float,float,float,float)`
+    static let breathingDisplacement = ShaderBinding.Distortion("breathingDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 blobDisplacement(float2,float4,float,float,float,float)`
+    static let blobDisplacement = ShaderBinding.Distortion("blobDisplacement", geometry: .boundingRect, sampling: .fixed(width: 60, height: 60))
+    /// `float2 zigzag(float2,float4,float,float,float,float)`
+    static let zigzag = ShaderBinding.Distortion("zigzag", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 pinch(float2,float4,float,float,float,float,float)`
+    static let pinch = ShaderBinding.Distortion("pinch", geometry: .boundingRect, sampling: .fixed(width: 100, height: 100))
+    /// `float2 twirl(float2,float4,float,float,float,float,float)`
+    static let twirl = ShaderBinding.Distortion("twirl", geometry: .boundingRect, sampling: .fixed(width: 100, height: 100))
+    /// `float2 spherize(float2,float4,float,float,float,float,float)`
+    static let spherize = ShaderBinding.Distortion("spherize", geometry: .boundingRect, sampling: .fixed(width: 100, height: 100))
+    /// `float2 flagWave(float2,float4,float,float,float,float)`
+    static let flagWave = ShaderBinding.Distortion("flagWave", geometry: .boundingRect, sampling: .fixed(width: 30, height: 80))
+    /// `float2 lensDistortion(float2,float4,float,float,float,float,float)`
+    static let lensDistortion = ShaderBinding.Distortion("lensDistortion", geometry: .boundingRect, sampling: .fixed(width: 100, height: 100))
+    /// `float2 shockwaveDisplacement(float2,float4,float,float,float,float,float)`
+    static let shockwaveDisplacement = ShaderBinding.Distortion("shockwaveDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 underwaterDisplacement(float2,float4,float,float,float,float)`
+    static let underwaterDisplacement = ShaderBinding.Distortion("underwaterDisplacement", geometry: .boundingRect, sampling: .fixed(width: 30, height: 30))
+    /// `float2 heatDistortion(float2,float4,float,float,float,float)`
+    static let heatDistortion = ShaderBinding.Distortion("heatDistortion", geometry: .boundingRect, sampling: .fixed(width: 30, height: 5))
+    /// `float2 spiralDisplacement(float2,float4,float,float,float,float,float)`
+    static let spiralDisplacement = ShaderBinding.Distortion("spiralDisplacement", geometry: .boundingRect, sampling: .fixed(width: 100, height: 100))
+    /// `float2 radialDisplacement(float2,float4,float,float,float,float,float)`
+    static let radialDisplacement = ShaderBinding.Distortion("radialDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 fbmDisplacement(float2,float4,float,float,float,float)`
+    static let fbmDisplacement = ShaderBinding.Distortion("fbmDisplacement", geometry: .boundingRect, sampling: .fixed(width: 60, height: 60))
+    /// `float2 noiseDisplacement(float2,float4,float,float,float,float)`
+    static let noiseDisplacement = ShaderBinding.Distortion("noiseDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 sineDisplacement(float2,float4,float,float,float,float,float)`
+    static let sineDisplacement = ShaderBinding.Distortion("sineDisplacement", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+
+    static var bindings: [any AnyShaderBinding] {
+        [magneticDisplacement, earthquakeDisplacement, windDisplacement, scanlineJitter, blockDisplacement, breathingDisplacement, blobDisplacement, zigzag, pinch, twirl, spherize, flagWave, lensDistortion, shockwaveDisplacement, underwaterDisplacement, heatDistortion, spiralDisplacement, radialDisplacement, fbmDisplacement, noiseDisplacement, sineDisplacement]
+    }
+}
+
 // MARK: - SineDisplacementModifier
 
 /// A view modifier that applies sine wave displacement.
@@ -65,16 +117,13 @@ public struct SineDisplacementModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.sineDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(amplitudeX),
-                .float(amplitudeY),
-                .float(frequencyX),
-                .float(frequencyY)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.sineDisplacement,
+            .float(time),
+            .float(amplitudeX),
+            .float(amplitudeY),
+            .float(frequencyX),
+            .float(frequencyY)
         )
     }
 }
@@ -109,15 +158,12 @@ public struct NoiseDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.noiseDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(amount),
-                .float(speed)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.noiseDisplacement,
+            .float(time),
+            .float(scale),
+            .float(amount),
+            .float(speed)
         )
     }
 }
@@ -152,15 +198,12 @@ public struct FBMDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.fbmDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(amount),
-                .float(Double(octaves))
-            ),
-            maxSampleOffset: CGSize(width: 60, height: 60)
+        content.shaderEffect(
+            DisplacementShaderBindings.fbmDisplacement,
+            .float(time),
+            .float(scale),
+            .float(amount),
+            .float(Double(octaves))
         )
     }
 }
@@ -195,16 +238,13 @@ public struct RadialDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.radialDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(amount),
-                .float(frequency),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.radialDisplacement,
+            .float(time),
+            .float(amount),
+            .float(frequency),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -239,16 +279,13 @@ public struct SpiralDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.spiralDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(amount),
-                .float(tightness),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 100, height: 100)
+        content.shaderEffect(
+            DisplacementShaderBindings.spiralDisplacement,
+            .float(time),
+            .float(amount),
+            .float(tightness),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -283,15 +320,12 @@ public struct HeatDistortionModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.heatDistortion(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(riseFactor),
-                .float(turbulence)
-            ),
-            maxSampleOffset: CGSize(width: 30, height: 5)
+        content.shaderEffect(
+            DisplacementShaderBindings.heatDistortion,
+            .float(time),
+            .float(intensity),
+            .float(riseFactor),
+            .float(turbulence)
         )
     }
 }
@@ -326,15 +360,12 @@ public struct UnderwaterDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.underwaterDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(waveScale),
-                .float(waveAmount),
-                .float(depthFactor)
-            ),
-            maxSampleOffset: CGSize(width: 30, height: 30)
+        content.shaderEffect(
+            DisplacementShaderBindings.underwaterDisplacement,
+            .float(time),
+            .float(waveScale),
+            .float(waveAmount),
+            .float(depthFactor)
         )
     }
 }
@@ -369,16 +400,13 @@ public struct ShockwaveDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.shockwaveDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(center.x),
-                .float(center.y),
-                .float(waveWidth),
-                .float(amplitude)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.shockwaveDisplacement,
+            .float(time),
+            .float(center.x),
+            .float(center.y),
+            .float(waveWidth),
+            .float(amplitude)
         )
     }
 }
@@ -413,16 +441,13 @@ public struct LensDistortionModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.lensDistortion(
-                .boundingRect,
-                .float(time),
-                .float(k1),
-                .float(k2),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 100, height: 100)
+        content.shaderEffect(
+            DisplacementShaderBindings.lensDistortion,
+            .float(time),
+            .float(k1),
+            .float(k2),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -457,15 +482,12 @@ public struct FlagWaveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.flagWave(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(frequency),
-                .float(propagation)
-            ),
-            maxSampleOffset: CGSize(width: 30, height: 80)
+        content.shaderEffect(
+            DisplacementShaderBindings.flagWave,
+            .float(time),
+            .float(amplitude),
+            .float(frequency),
+            .float(propagation)
         )
     }
 }
@@ -500,16 +522,13 @@ public struct SpherizeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.spherize(
-                .boundingRect,
-                .float(time),
-                .float(amount),
-                .float(radius),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 100, height: 100)
+        content.shaderEffect(
+            DisplacementShaderBindings.spherize,
+            .float(time),
+            .float(amount),
+            .float(radius),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -544,16 +563,13 @@ public struct TwirlModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.twirl(
-                .boundingRect,
-                .float(time),
-                .float(angle),
-                .float(radius),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 100, height: 100)
+        content.shaderEffect(
+            DisplacementShaderBindings.twirl,
+            .float(time),
+            .float(angle),
+            .float(radius),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -588,16 +604,13 @@ public struct PinchModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.pinch(
-                .boundingRect,
-                .float(time),
-                .float(amount),
-                .float(radius),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 100, height: 100)
+        content.shaderEffect(
+            DisplacementShaderBindings.pinch,
+            .float(time),
+            .float(amount),
+            .float(radius),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -632,15 +645,12 @@ public struct ZigzagModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.zigzag(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(frequency),
-                .float(angle)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.zigzag,
+            .float(time),
+            .float(amplitude),
+            .float(frequency),
+            .float(angle)
         )
     }
 }
@@ -675,15 +685,12 @@ public struct BlobDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.blobDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(amount),
-                .float(smoothness)
-            ),
-            maxSampleOffset: CGSize(width: 60, height: 60)
+        content.shaderEffect(
+            DisplacementShaderBindings.blobDisplacement,
+            .float(time),
+            .float(scale),
+            .float(amount),
+            .float(smoothness)
         )
     }
 }
@@ -718,16 +725,13 @@ public struct BreathingDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.breathingDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(amount),
-                .float(speed),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.breathingDisplacement,
+            .float(time),
+            .float(amount),
+            .float(speed),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -762,15 +766,12 @@ public struct BlockDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.blockDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(blockSize),
-                .float(amount),
-                .float(probability)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.blockDisplacement,
+            .float(time),
+            .float(blockSize),
+            .float(amount),
+            .float(probability)
         )
     }
 }
@@ -805,15 +806,12 @@ public struct ScanlineJitterModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.scanlineJitter(
-                .boundingRect,
-                .float(time),
-                .float(lineHeight),
-                .float(jitterAmount),
-                .float(probability)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 5)
+        content.shaderEffect(
+            DisplacementShaderBindings.scanlineJitter,
+            .float(time),
+            .float(lineHeight),
+            .float(jitterAmount),
+            .float(probability)
         )
     }
 }
@@ -848,15 +846,12 @@ public struct WindDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.windDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(strength),
-                .float(gustiness),
-                .float(direction)
-            ),
-            maxSampleOffset: CGSize(width: 40, height: 40)
+        content.shaderEffect(
+            DisplacementShaderBindings.windDisplacement,
+            .float(time),
+            .float(strength),
+            .float(gustiness),
+            .float(direction)
         )
     }
 }
@@ -891,15 +886,12 @@ public struct EarthquakeDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.earthquakeDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(magnitude),
-                .float(frequency),
-                .float(decay)
-            ),
-            maxSampleOffset: CGSize(width: 30, height: 30)
+        content.shaderEffect(
+            DisplacementShaderBindings.earthquakeDisplacement,
+            .float(time),
+            .float(magnitude),
+            .float(frequency),
+            .float(decay)
         )
     }
 }
@@ -930,15 +922,12 @@ public struct MagneticDisplacementModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.magneticDisplacement(
-                .boundingRect,
-                .float(time),
-                .float(strength),
-                .float(pole.x),
-                .float(pole.y)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            DisplacementShaderBindings.magneticDisplacement,
+            .float(time),
+            .float(strength),
+            .float(pole.x),
+            .float(pole.y)
         )
     }
 }

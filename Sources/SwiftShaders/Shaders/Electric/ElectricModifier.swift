@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum ElectricShaderBindings: ShaderFamily {
+    /// `half4 electricNeon(float2,half4,float4,float,float,float)`
+    static let electricNeon = ShaderBinding.Color("electricNeon", geometry: .boundingRect)
+    /// `half4 electricField(float2,half4,float4,float,float,float)`
+    static let electricField = ShaderBinding.Color("electricField", geometry: .boundingRect)
+    /// `half4 staticElectricity(float2,half4,float4,float,float,float)`
+    static let staticElectricity = ShaderBinding.Color("staticElectricity", geometry: .boundingRect)
+    /// `half4 electricArc(float2,half4,float4,float,float,float,float,float,float)`
+    static let electricArc = ShaderBinding.Color("electricArc", geometry: .boundingRect)
+    /// `half4 plasma(float2,half4,float4,float,float,float)`
+    static let plasma = ShaderBinding.Color("plasma", geometry: .boundingRect)
+    /// `half4 lightning(float2,half4,float4,float,float,float,float)`
+    static let lightning = ShaderBinding.Color("lightning", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [electricNeon, electricField, staticElectricity, electricArc, plasma, lightning]
+    }
+}
+
 // MARK: - LightningModifier
 
 /// A view modifier that applies lightning bolt effects.
@@ -25,14 +47,12 @@ public struct LightningModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.lightning(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(branchiness),
-                .float(glowRadius)
-            )
+        content.shaderEffect(
+            ElectricShaderBindings.lightning,
+            .float(time),
+            .float(intensity),
+            .float(branchiness),
+            .float(glowRadius)
         )
     }
 }
@@ -59,13 +79,11 @@ public struct PlasmaModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.plasma(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(colorSpeed)
-            )
+        content.shaderEffect(
+            ElectricShaderBindings.plasma,
+            .float(time),
+            .float(scale),
+            .float(colorSpeed)
         )
     }
 }
@@ -95,16 +113,14 @@ public struct ElectricArcModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.electricArc(
-                .boundingRect,
-                .float(time),
-                .float(start.x),
-                .float(start.y),
-                .float(end.x),
-                .float(end.y),
-                .float(thickness)
-            )
+        content.shaderEffect(
+            ElectricShaderBindings.electricArc,
+            .float(time),
+            .float(start.x),
+            .float(start.y),
+            .float(end.x),
+            .float(end.y),
+            .float(thickness)
         )
     }
 }
@@ -131,13 +147,11 @@ public struct StaticElectricityModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.staticElectricity(
-                .boundingRect,
-                .float(time),
-                .float(density),
-                .float(sparkSize)
-            )
+        content.shaderEffect(
+            ElectricShaderBindings.staticElectricity,
+            .float(time),
+            .float(density),
+            .float(sparkSize)
         )
     }
 }
@@ -164,13 +178,11 @@ public struct ElectricFieldModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.electricField(
-                .boundingRect,
-                .float(time),
-                .float(lineCount),
-                .float(flowSpeed)
-            )
+        content.shaderEffect(
+            ElectricShaderBindings.electricField,
+            .float(time),
+            .float(lineCount),
+            .float(flowSpeed)
         )
     }
 }
@@ -197,13 +209,11 @@ public struct ElectricNeonModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.electricNeon(
-                .boundingRect,
-                .float(time),
-                .float(glowIntensity),
-                .float(flickerSpeed)
-            )
+        content.shaderEffect(
+            ElectricShaderBindings.electricNeon,
+            .float(time),
+            .float(glowIntensity),
+            .float(flickerSpeed)
         )
     }
 }

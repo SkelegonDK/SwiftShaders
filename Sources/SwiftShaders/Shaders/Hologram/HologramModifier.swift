@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum HologramShaderBindings: ShaderFamily {
+    /// `half4 retroHologram(float2,half4,float4,float,float,float)`
+    static let retroHologram = ShaderBinding.Color("retroHologram", geometry: .boundingRect)
+    /// `half4 dataStreamHologram(float2,half4,float4,float,float,float)`
+    static let dataStreamHologram = ShaderBinding.Color("dataStreamHologram", geometry: .boundingRect)
+    /// `half4 projectionHologram(float2,half4,float4,float,float,float)`
+    static let projectionHologram = ShaderBinding.Color("projectionHologram", geometry: .boundingRect)
+    /// `half4 wireframeHologram(float2,half4,float4,float,float,float)`
+    static let wireframeHologram = ShaderBinding.Color("wireframeHologram", geometry: .boundingRect)
+    /// `half4 glitchyHologram(float2,half4,float4,float,float,float)`
+    static let glitchyHologram = ShaderBinding.Color("glitchyHologram", geometry: .boundingRect)
+    /// `half4 hologram(float2,half4,float4,float,float,float,float)`
+    static let hologram = ShaderBinding.Color("hologram", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [retroHologram, dataStreamHologram, projectionHologram, wireframeHologram, glitchyHologram, hologram]
+    }
+}
+
 // MARK: - HologramModifier
 
 /// A view modifier that applies futuristic hologram effects.
@@ -58,14 +80,12 @@ public struct HologramModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.hologram(
-                .boundingRect,
-                .float(time),
-                .float(scanlineIntensity),
-                .float(flickerSpeed),
-                .float(colorShift)
-            )
+        content.shaderEffect(
+            HologramShaderBindings.hologram,
+            .float(time),
+            .float(scanlineIntensity),
+            .float(flickerSpeed),
+            .float(colorShift)
         )
     }
 }
@@ -92,13 +112,11 @@ public struct GlitchyHologramModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.glitchyHologram(
-                .boundingRect,
-                .float(time),
-                .float(glitchIntensity),
-                .float(noiseAmount)
-            )
+        content.shaderEffect(
+            HologramShaderBindings.glitchyHologram,
+            .float(time),
+            .float(glitchIntensity),
+            .float(noiseAmount)
         )
     }
 }
@@ -125,13 +143,11 @@ public struct WireframeHologramModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.wireframeHologram(
-                .boundingRect,
-                .float(time),
-                .float(gridSize),
-                .float(lineWidth)
-            )
+        content.shaderEffect(
+            HologramShaderBindings.wireframeHologram,
+            .float(time),
+            .float(gridSize),
+            .float(lineWidth)
         )
     }
 }
@@ -158,13 +174,11 @@ public struct ProjectionHologramModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.projectionHologram(
-                .boundingRect,
-                .float(time),
-                .float(lineSpacing),
-                .float(perspectiveAmount)
-            )
+        content.shaderEffect(
+            HologramShaderBindings.projectionHologram,
+            .float(time),
+            .float(lineSpacing),
+            .float(perspectiveAmount)
         )
     }
 }
@@ -191,13 +205,11 @@ public struct DataStreamHologramModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.dataStreamHologram(
-                .boundingRect,
-                .float(time),
-                .float(streamSpeed),
-                .float(density)
-            )
+        content.shaderEffect(
+            HologramShaderBindings.dataStreamHologram,
+            .float(time),
+            .float(streamSpeed),
+            .float(density)
         )
     }
 }
@@ -224,13 +236,11 @@ public struct RetroHologramModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.retroHologram(
-                .boundingRect,
-                .float(time),
-                .float(bandCount),
-                .float(speed)
-            )
+        content.shaderEffect(
+            HologramShaderBindings.retroHologram,
+            .float(time),
+            .float(bandCount),
+            .float(speed)
         )
     }
 }

@@ -1,5 +1,29 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum DistortionShaderBindings: ShaderFamily {
+    /// `float2 lensWarp(float2,float4,float,float,float,float)`
+    static let lensWarp = ShaderBinding.Distortion("lensWarp", geometry: .boundingRect, sampling: .fixed(width: 80, height: 80))
+    /// `float2 magnify(float2,float4,float,float,float,float)`
+    static let magnify = ShaderBinding.Distortion("magnify", geometry: .boundingRect, sampling: .perSite)
+    /// `float2 kaleidoscopeDistort(float2,float4,float,float)`
+    static let kaleidoscopeDistort = ShaderBinding.Distortion("kaleidoscopeDistort", geometry: .boundingRect, sampling: .fixed(width: 200, height: 200))
+    /// `float2 swirlDistortion(float2,float4,float,float,float,float)`
+    static let swirlDistortion = ShaderBinding.Distortion("swirlDistortion", geometry: .boundingRect, sampling: .perSite)
+    /// `float2 pinchDistortion(float2,float4,float,float,float,float)`
+    static let pinchDistortion = ShaderBinding.Distortion("pinchDistortion", geometry: .boundingRect, sampling: .perSite)
+    /// `float2 sphereBulge(float2,float4,float,float,float,float)`
+    static let sphereBulge = ShaderBinding.Distortion("sphereBulge", geometry: .boundingRect, sampling: .perSite)
+    /// `float2 barrelDistortion(float2,float4,float,float)`
+    static let barrelDistortion = ShaderBinding.Distortion("barrelDistortion", geometry: .boundingRect, sampling: .fixed(width: 100, height: 100))
+
+    static var bindings: [any AnyShaderBinding] {
+        [lensWarp, magnify, kaleidoscopeDistort, swirlDistortion, pinchDistortion, sphereBulge, barrelDistortion]
+    }
+}
+
 // MARK: - BarrelDistortionModifier
 
 /// Applies barrel (fisheye) distortion effect.
@@ -21,13 +45,10 @@ public struct BarrelDistortionModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.barrelDistortion(
-                .boundingRect,
-                .float(strength),
-                .float(zoom)
-            ),
-            maxSampleOffset: CGSize(width: 100, height: 100)
+        content.shaderEffect(
+            DistortionShaderBindings.barrelDistortion,
+            .float(strength),
+            .float(zoom)
         )
     }
 }
@@ -54,14 +75,12 @@ public struct SphereBulgeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.sphereBulge(
-                .boundingRect,
-                .float(center.x),
-                .float(center.y),
-                .float(radius),
-                .float(strength)
-            ),
+        content.shaderEffect(
+            DistortionShaderBindings.sphereBulge,
+            .float(center.x),
+            .float(center.y),
+            .float(radius),
+            .float(strength),
             maxSampleOffset: CGSize(width: CGFloat(radius), height: CGFloat(radius))
         )
     }
@@ -89,14 +108,12 @@ public struct DistortionPinchModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.pinchDistortion(
-                .boundingRect,
-                .float(center.x),
-                .float(center.y),
-                .float(radius),
-                .float(strength)
-            ),
+        content.shaderEffect(
+            DistortionShaderBindings.pinchDistortion,
+            .float(center.x),
+            .float(center.y),
+            .float(radius),
+            .float(strength),
             maxSampleOffset: CGSize(width: CGFloat(radius), height: CGFloat(radius))
         )
     }
@@ -128,14 +145,12 @@ public struct DistortionSwirlModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.swirlDistortion(
-                .boundingRect,
-                .float(center.x),
-                .float(center.y),
-                .float(radius),
-                .float(angle)
-            ),
+        content.shaderEffect(
+            DistortionShaderBindings.swirlDistortion,
+            .float(center.x),
+            .float(center.y),
+            .float(radius),
+            .float(angle),
             maxSampleOffset: CGSize(width: CGFloat(radius), height: CGFloat(radius))
         )
     }
@@ -160,13 +175,10 @@ public struct DistortionKaleidoscopeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.kaleidoscopeDistort(
-                .boundingRect,
-                .float(segments),
-                .float(rotation)
-            ),
-            maxSampleOffset: CGSize(width: 200, height: 200)
+        content.shaderEffect(
+            DistortionShaderBindings.kaleidoscopeDistort,
+            .float(segments),
+            .float(rotation)
         )
     }
 }
@@ -193,14 +205,12 @@ public struct MagnifyModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.magnify(
-                .boundingRect,
-                .float(center.x),
-                .float(center.y),
-                .float(radius),
-                .float(magnification)
-            ),
+        content.shaderEffect(
+            DistortionShaderBindings.magnify,
+            .float(center.x),
+            .float(center.y),
+            .float(radius),
+            .float(magnification),
             maxSampleOffset: CGSize(width: CGFloat(radius), height: CGFloat(radius))
         )
     }
@@ -232,15 +242,12 @@ public struct LensWarpModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.lensWarp(
-                .boundingRect,
-                .float(k1),
-                .float(k2),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 80, height: 80)
+        content.shaderEffect(
+            DistortionShaderBindings.lensWarp,
+            .float(k1),
+            .float(k2),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }

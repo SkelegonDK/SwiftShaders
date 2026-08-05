@@ -5,6 +5,20 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum CRTShaderBindings: ShaderFamily {
+    /// `half4 crtSimple(float2,half4,float2,float)`
+    static let crtSimple = ShaderBinding.Color("crtSimple", geometry: .viewSize)
+    /// `half4 crtEffect(float2,half4,float2,float,float,float,float,float)`
+    static let crtEffect = ShaderBinding.Color("crtEffect", geometry: .viewSize)
+
+    static var bindings: [any AnyShaderBinding] {
+        [crtSimple, crtEffect]
+    }
+}
+
 // MARK: - CRT Shader Types
 
 /// CRT effect style presets
@@ -109,19 +123,14 @@ public struct CRTModifier: ViewModifier {
             let time = configuration.flickerEnabled ? 
                 startTime.distance(to: timeline.date) : 0.0
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.crtEffect(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.curvature),
-                            .float(configuration.scanlineIntensity),
-                            .float(configuration.phosphorScale),
-                            .float(configuration.vignetteIntensity)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                CRTShaderBindings.crtEffect,
+                .float(time),
+                .float(configuration.curvature),
+                .float(configuration.scanlineIntensity),
+                .float(configuration.phosphorScale),
+                .float(configuration.vignetteIntensity)
+            )
         }
     }
 }
@@ -135,15 +144,10 @@ public struct CRTSimpleModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.crtSimple(
-                        .float2(proxy.size),
-                        .float(scanlineCount)
-                    )
-                )
-            }
+        content.shaderEffect(
+            CRTShaderBindings.crtSimple,
+            .float(scanlineCount)
+        )
     }
 }
 

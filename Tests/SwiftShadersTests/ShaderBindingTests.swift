@@ -12,9 +12,18 @@ import SwiftUI
 /// There is no checked lookup, no optional variant and no throwing variant to
 /// reach for; see the plan's Phase 0.3.
 ///
-/// These tests are that missing check. Each defect class gets its own test so
-/// the counts stay legible, and each broken call site reports its own failure
-/// with a clickable `file:line`.
+/// Since Phase 5 the convention lives in one place: every call site declares a
+/// `ShaderBinding` once and applies it with `View.shaderEffect`. These tests
+/// are the missing check, retargeted at that module:
+///
+/// - the *declarations* are checked against `shader-signatures.tsv` (name,
+///   kind, geometry — each its own defect class, so the counts stay legible);
+/// - the *application sites* are checked for argument count and types;
+/// - `ShaderBindingRegistry` is checked against the declarations found in
+///   source, because a registry test that only consulted the registry could
+///   not notice a binding that was declared but never registered;
+/// - `Shader.compile(as:)` independently re-verifies every site through the
+///   module's own argument-assembly path.
 final class ShaderBindingTests: XCTestCase {
 
     // MARK: - The manifest describes the library that ships
@@ -41,129 +50,221 @@ final class ShaderBindingTests: XCTestCase {
         )
     }
 
+    // MARK: - The convention has one home
+
+    /// After Phase 5 no call site spells the convention by hand. The raw-site
+    /// scanner still works — its fixture tests prove it — so finding zero raw
+    /// sites means they are gone, not that the scanner is broken. The root
+    /// check guards against the third possibility: the scanner looking at the
+    /// wrong directory and finding zero of everything.
+    func testNoRawCallSitesRemainOutsideTheBindingModule() throws {
+        let shaders = ShaderCallSiteScanner.repositoryRoot
+            .appendingPathComponent("Sources/SwiftShaders/Shaders")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: shaders.path),
+            "The scanner's repository root is wrong; a zero count below would be meaningless."
+        )
+        XCTAssertEqual(
+            try ShaderCallSiteScanner.scanSources().map(\.description), [],
+            "These call sites bypass ShaderBinding and restate the convention by hand. "
+            + "Declare a binding and apply it with .shaderEffect instead."
+        )
+    }
+
+    /// A collapse of either scan to a trivial count would quietly turn every
+    /// test below vacuous.
+    func testTheScannersFindTheDeclaredPopulation() throws {
+        let declarations = try ShaderBindingSourceScanner.scanDeclarations()
+        let applications = try ShaderBindingSourceScanner.scanApplications()
+
+        XCTAssertGreaterThan(
+            declarations.count, 150,
+            "Found \(declarations.count) binding declarations; the library declares ~200."
+        )
+        XCTAssertGreaterThan(
+            applications.count, 150,
+            "Found \(applications.count) application sites; the library has ~200."
+        )
+    }
+
     // MARK: - Defect class 1: the function does not exist
 
-    func testEveryCallSiteResolvesToAFunctionInTheLibrary() throws {
+    func testEveryBindingResolvesToAFunctionInTheLibrary() throws {
         let signatures = try ShaderSignatureManifest.load()
         var unresolved = 0
 
-        for site in try ShaderCallSiteScanner.scanSources() where signatures[site.functionName] == nil {
+        for declaration in try ShaderBindingSourceScanner.scanDeclarations()
+        where signatures[declaration.functionName] == nil {
             unresolved += 1
             XCTFail(
-                "\(site.file):\(site.line): no [[stitchable]] function named '\(site.functionName)' "
-                + "exists in default.metallib. This call site draws nothing."
+                "\(declaration.file):\(declaration.line): no [[stitchable]] function named "
+                + "'\(declaration.functionName)' exists in default.metallib. "
+                + "Every site applying this binding draws nothing."
             )
         }
         print("[binding] unresolved function names: \(unresolved)")
     }
 
-    // MARK: - Defect class 2: the argument count is wrong
+    // MARK: - Defect class 2: the wrong effect kind
 
-    /// SwiftUI supplies only `position` (plus `color` or `layer`); there is no
-    /// implicit `bounds` and no implicit `size`, so a shader declaring
-    /// `float4 bounds` needs an explicit `.boundingRect` from Swift. When the
-    /// count is short every argument slides one position left and the shader
-    /// reads a neighbouring uniform as its first parameter.
-    func testEveryCallSitePassesTheNumberOfArgumentsItsFunctionExpects() throws {
+    /// The binding's type decides which `View` effect method the applier
+    /// compiles to, so declaring a distortion function as `ShaderBinding.Color`
+    /// is the old wrong-effect-method defect in its new home.
+    func testEveryBindingDeclaresTheKindItsFunctionDeclares() throws {
         let signatures = try ShaderSignatureManifest.load()
-        var mismatched = 0
+        var misdeclared = 0
 
-        for site in try ShaderCallSiteScanner.scanSources() {
-            // The other two defect classes have their own tests; counting them
-            // here as well would inflate this one.
-            guard let signature = signatures[site.functionName],
-                  signature.kind == site.effectMethod.manifestKind
+        for declaration in try ShaderBindingSourceScanner.scanDeclarations() {
+            guard let signature = signatures[declaration.functionName],
+                  signature.kind != Self.manifestKind[declaration.kindType]
             else { continue }
-            guard site.argumentKinds.count != signature.explicitArgumentCount else { continue }
+
+            misdeclared += 1
+            XCTFail(
+                "\(declaration.file):\(declaration.line): '\(declaration.functionName)' is a "
+                + "\(signature.kind) (returns \(signature.returnType)) but is declared as "
+                + "ShaderBinding.\(declaration.kindType)."
+            )
+        }
+        print("[binding] wrong effect kind: \(misdeclared)")
+    }
+
+    private static let manifestKind: [String: String] = [
+        "Color": "colorEffect",
+        "Distortion": "distortionEffect",
+        "Layer": "layerEffect",
+    ]
+
+    // MARK: - Defect class 3: the wrong geometry
+
+    /// The declared geometry decides what the module prepends, so a wrong
+    /// declaration re-creates the missing-`.boundingRect` bug at one site
+    /// instead of two hundred. The yardstick is the manifest, not the
+    /// declaration: by library convention a first explicit parameter of
+    /// `float4` is a bounding rect and one of `float2` is the view size —
+    /// exactly the split Phase 0.6 measured (144 / 85 / 27) — so the derived
+    /// geometry is independent of the code under test.
+    func testEveryBindingDeclaresTheGeometryItsFunctionDeclares() throws {
+        let signatures = try ShaderSignatureManifest.load()
+        var misdeclared = 0
+
+        for declaration in try ShaderBindingSourceScanner.scanDeclarations() {
+            // Name and kind defects have their own tests; skipping them here
+            // keeps the classes a partition rather than an overlap.
+            guard let signature = signatures[declaration.functionName],
+                  signature.kind == Self.manifestKind[declaration.kindType]
+            else { continue }
+            let derived = Self.derivedGeometry(of: signature)
+            guard declaration.geometry != derived else { continue }
+
+            misdeclared += 1
+            XCTFail(
+                "\(declaration.file):\(declaration.line): '\(declaration.functionName)' has "
+                + "first explicit parameter "
+                + "\(signature.parameters.suffix(signature.explicitArgumentCount).first ?? "none"), "
+                + "so its geometry is .\(derived), but the binding declares .\(declaration.geometry)."
+            )
+        }
+        print("[binding] wrong geometry: \(misdeclared)")
+    }
+
+    private static func derivedGeometry(of signature: ShaderSignature) -> String {
+        switch signature.parameters.suffix(signature.explicitArgumentCount).first {
+        case "float4": return "boundingRect"
+        case "float2": return "viewSize"
+        default: return "plain"
+        }
+    }
+
+    /// How many arguments the module prepends for a geometry.
+    private static func prefixCount(ofGeometry geometry: String) -> Int {
+        geometry == "plain" ? 0 : 1
+    }
+
+    // MARK: - Defect class 4: the argument count is wrong
+
+    /// SwiftUI supplies only `position` (plus `color` or `layer`), and the
+    /// module supplies the geometry prefix; everything else is the site's to
+    /// pass. When the count is short every argument slides one position left
+    /// and the shader reads a neighbouring uniform.
+    func testEveryApplicationSitePassesTheNumberOfArgumentsItsFunctionExpects() throws {
+        let signatures = try ShaderSignatureManifest.load()
+        let declarations = try Self.declarationsByReference()
+        var mismatched = 0
+        var unresolved: [String] = []
+
+        for site in try ShaderBindingSourceScanner.scanApplications() {
+            guard let declaration = declarations["\(site.family).\(site.property)"] else {
+                unresolved.append(site.description)
+                continue
+            }
+            // Declaration-level defects have their own tests above.
+            guard let signature = signatures[declaration.functionName],
+                  signature.kind == Self.manifestKind[declaration.kindType]
+            else { continue }
+            let derived = Self.derivedGeometry(of: signature)
+            guard declaration.geometry == derived else { continue }
+
+            let expected = signature.explicitArgumentCount - Self.prefixCount(ofGeometry: derived)
+            guard site.argumentKinds.count != expected else { continue }
 
             mismatched += 1
             XCTFail(
-                "\(site.file):\(site.line): '\(site.functionName)' expects "
-                + "\(signature.explicitArgumentCount) explicit argument(s) "
-                + "(\(signature.parameters.joined(separator: ", "))) but the call site passes "
+                "\(site.file):\(site.line): '\(declaration.functionName)' expects \(expected) "
+                + "site argument(s) after the module-supplied prefix but the site passes "
                 + "\(site.argumentKinds.count) (\(site.argumentKinds.joined(separator: ", ")))."
-                + (signature.parameters.dropFirst().contains("float4")
-                   ? " Its first explicit parameter is a float4 — this is the missing `.boundingRect`."
-                   : "")
             )
         }
+        XCTAssertEqual(
+            unresolved, [],
+            "These sites reference a binding the declaration scanner did not find, "
+            + "so nothing checked them."
+        )
         print("[binding] argument-count mismatches: \(mismatched)")
     }
 
-    // MARK: - Defect class 3: the wrong effect method
+    // MARK: - Defect class 5: the argument type is wrong
 
-    /// The effect method decides what SwiftUI passes implicitly and what return
-    /// type it expects, so invoking a `distortionEffect` function through
-    /// `.colorEffect` is a defect even when the argument count lines up.
-    func testEveryCallSiteUsesTheEffectMethodItsFunctionDeclares() throws {
+    /// A site can pass the right *number* of arguments and still be unbindable
+    /// — the 28 `half3` sites Phase 2 found were exactly this. The manifest
+    /// carries the declared parameter types, so each site argument is compared
+    /// against the type at its position (after the module-supplied prefix).
+    func testEveryApplicationSitePassesArgumentsOfTheDeclaredTypes() throws {
         let signatures = try ShaderSignatureManifest.load()
-        var misdirected = 0
-
-        for site in try ShaderCallSiteScanner.scanSources() {
-            guard let signature = signatures[site.functionName],
-                  signature.kind != site.effectMethod.manifestKind
-            else { continue }
-
-            misdirected += 1
-            XCTFail(
-                "\(site.file):\(site.line): '\(site.functionName)' is declared as a "
-                + "\(signature.kind) (returns \(signature.returnType)) but is invoked through "
-                + ".\(site.effectMethod.manifestKind)."
-            )
-        }
-        print("[binding] wrong effect method: \(misdirected)")
-    }
-
-    // MARK: - Defect class 4: the argument type is wrong
-
-    /// A call site can pass the right *number* of arguments and still be
-    /// unbindable, because `Shader.Argument` cannot produce every MSL type. In
-    /// particular there is no `half3` factory — the only half-typed argument
-    /// SwiftUI can supply is `.color`, which is a `half4` — so a shader
-    /// declaring `half3` cannot be driven from Swift at all, whatever the caller
-    /// passes. SwiftUI's stitcher rejects it with "unsupported MTLDataType: 18".
-    ///
-    /// Counting arguments does not see this class, which is why it survived the
-    /// earlier inventory.
-    func testEveryCallSitePassesArgumentsOfTheDeclaredTypes() throws {
-        let signatures = try ShaderSignatureManifest.load()
+        let declarations = try Self.declarationsByReference()
         var mistyped = 0
         var unchecked: [String] = []
 
-        for site in try ShaderCallSiteScanner.scanSources() {
-            // Sites already counted by the name, kind and arity tests are
-            // skipped so the four counts partition the defects rather than
-            // overlapping.
-            guard let signature = signatures[site.functionName],
-                  signature.kind == site.effectMethod.manifestKind,
-                  site.argumentKinds.count == signature.explicitArgumentCount
+        for site in try ShaderBindingSourceScanner.scanApplications() {
+            guard let declaration = declarations["\(site.family).\(site.property)"],
+                  let signature = signatures[declaration.functionName],
+                  signature.kind == Self.manifestKind[declaration.kindType]
             else { continue }
+            let derived = Self.derivedGeometry(of: signature)
+            let expected = signature.explicitArgumentCount - Self.prefixCount(ofGeometry: derived)
+            guard declaration.geometry == derived, site.argumentKinds.count == expected else { continue }
 
-            let declared = Array(signature.parameters.suffix(signature.explicitArgumentCount))
+            let declared = signature.parameters
+                .suffix(signature.explicitArgumentCount)
+                .dropFirst(Self.prefixCount(ofGeometry: derived))
             var wrong: [String] = []
             for (index, kind) in site.argumentKinds.enumerated() {
                 guard let supplied = Self.typeSupplied[kind] else {
                     unchecked.append("\(site.file):\(site.line) argument \(index) is .\(kind)")
                     continue
                 }
-                guard supplied != declared[index] else { continue }
-                wrong.append("argument \(index) is declared \(declared[index]) but .\(kind) supplies \(supplied)")
+                let declaredType = declared[declared.startIndex + index]
+                guard supplied != declaredType else { continue }
+                wrong.append("argument \(index) is declared \(declaredType) but .\(kind) supplies \(supplied)")
             }
             guard !wrong.isEmpty else { continue }
 
-            // Counted per call site, not per argument, so this number is
-            // directly comparable with the other three classes and with the
-            // compile(as:) oracle.
             mistyped += 1
             XCTFail(
-                "\(site.file):\(site.line): '\(site.functionName)' — \(wrong.joined(separator: "; "))."
-                + (declared.contains { $0.hasPrefix("half") }
-                   ? " No Shader.Argument factory produces a half3; this one needs the Metal "
-                   + "declaration changed, not the call site."
-                   : "")
+                "\(site.file):\(site.line): '\(declaration.functionName)' — "
+                + wrong.joined(separator: "; ") + "."
             )
         }
-
         XCTAssertEqual(
             unchecked, [],
             "These arguments use a Shader.Argument factory with no entry in the type table, "
@@ -186,33 +287,92 @@ final class ShaderBindingTests: XCTestCase {
         "color": "half4",
     ]
 
+    // MARK: - Per-site sampling
+
+    /// A `.perSite` binding has no offset of its own, so a site that forgets
+    /// `maxSampleOffset:` falls into the applier's debug assertion at render
+    /// time. This catches it earlier, with a `file:line`.
+    func testEverySiteOfAPerSiteBindingPassesItsSampleOffset() throws {
+        let declarations = try Self.declarationsByReference()
+        var missing = 0
+
+        for site in try ShaderBindingSourceScanner.scanApplications() {
+            guard let declaration = declarations["\(site.family).\(site.property)"],
+                  declaration.sampling == "perSite",
+                  !site.overridesSampleOffset
+            else { continue }
+
+            missing += 1
+            XCTFail(
+                "\(site.file):\(site.line): '\(declaration.functionName)' is declared "
+                + ".perSite (\(declaration.file):\(declaration.line)) but this site passes "
+                + "no maxSampleOffset:."
+            )
+        }
+        print("[binding] perSite sites missing an offset: \(missing)")
+    }
+
+    // MARK: - The registry lists what the sources declare
+
+    /// The compile oracle below enumerates `ShaderBindingRegistry`, so a
+    /// declared-but-unregistered binding would silently escape it. The
+    /// declarations scanned from source are the independent yardstick.
+    func testRegistryListsEveryDeclaredBinding() throws {
+        let declared = try ShaderBindingSourceScanner.scanDeclarations()
+        let registered = ShaderBindingRegistry.all
+
+        let declaredNames = declared.map(\.functionName).sorted()
+        let registeredNames = registered.map(\.descriptor.name).sorted()
+        XCTAssertEqual(
+            registeredNames.count, Set(registeredNames).count,
+            "Two registered bindings share a function name; the oracle's lookup "
+            + "would silently test only one of them."
+        )
+        XCTAssertEqual(
+            declaredNames, registeredNames,
+            "ShaderBindingRegistry disagrees with the declarations in source. "
+            + "Missing from the registry: "
+            + Set(declaredNames).subtracting(registeredNames).sorted().joined(separator: ", ")
+            + ". Registered but not declared: "
+            + Set(registeredNames).subtracting(declaredNames).sorted().joined(separator: ", ")
+            + ". Check the family's `bindings` array and ShaderBindingRegistry.families."
+        )
+    }
+
     // MARK: - The first-party oracle
 
     /// `Shader.compile(as:)` is Apple's own validation of a binding, and the
-    /// only check that sees argument *types* rather than counts. It is a
-    /// separate, independent confirmation of the three tests above — if their
-    /// totals and this one's disagree, one of them is wrong.
+    /// only check that sees argument *types* rather than counts. Each probe is
+    /// assembled by the binding's own `makeShader`, so the geometry prefix the
+    /// oracle verifies is the one production applies — not a re-derivation.
     ///
     /// macOS 15 / iOS 18 only, so it is gated rather than assumed.
-    func testEveryCallSiteCompiles() async throws {
+    func testEveryApplicationSiteCompiles() async throws {
         guard #available(macOS 15.0, iOS 18.0, tvOS 18.0, visionOS 2.0, *) else {
             throw XCTSkip("Shader.compile(as:) requires macOS 15 / iOS 18.")
         }
         guard MTLCreateSystemDefaultDevice() != nil else {
             throw XCTSkip("No Metal device in this test process.")
         }
-        try await compileEveryCallSite()
+        try await compileEveryApplicationSite()
     }
 
     @available(macOS 15.0, iOS 18.0, tvOS 18.0, visionOS 2.0, *)
-    private func compileEveryCallSite() async throws {
+    private func compileEveryApplicationSite() async throws {
+        let declarations = try Self.declarationsByReference()
+        let bindings = Dictionary(
+            ShaderBindingRegistry.all.map { ($0.descriptor.name, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         var rejections: [String] = []
         var unrepresentable: [String] = []
         var probed = 0
 
-        for site in try ShaderCallSiteScanner.scanSources() {
-            guard let usage = site.effectMethod.usageType else {
-                unrepresentable.append("\(site.file):\(site.line) unattributed effect method")
+        for site in try ShaderBindingSourceScanner.scanApplications() {
+            guard let declaration = declarations["\(site.family).\(site.property)"],
+                  let binding = bindings[declaration.functionName]
+            else {
+                unrepresentable.append("\(site.file):\(site.line) unresolved binding")
                 continue
             }
             guard let arguments = try? site.argumentKinds.map(Self.placeholderArgument(for:)) else {
@@ -221,14 +381,17 @@ final class ShaderBindingTests: XCTestCase {
             }
             probed += 1
 
-            let shader = ShaderLibrary.swiftShaders[dynamicMember: site.functionName]
-                .dynamicallyCall(withArguments: arguments)
+            let shader = binding.makeShader(
+                arguments: arguments,
+                proxySize: CGSize(width: 100, height: 100)
+            )
             do {
-                try await shader.compile(as: usage)
+                try await shader.compile(as: binding.descriptor.kind.usageType)
             } catch {
                 rejections.append(
-                    "\(site.file):\(site.line): '\(site.functionName)' as .\(site.effectMethod.manifestKind) "
-                    + "with \(site.argumentKinds.count) argument(s): "
+                    "\(site.file):\(site.line): '\(declaration.functionName)' as "
+                    + ".\(binding.descriptor.kind.rawValue) with \(site.argumentKinds.count) "
+                    + "site argument(s): "
                     + error.localizedDescription.split(separator: "\n")
                         .map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: " ")
                 )
@@ -237,14 +400,14 @@ final class ShaderBindingTests: XCTestCase {
 
         XCTAssertEqual(
             unrepresentable, [],
-            "These call sites could not be probed, so compile(as:) says nothing about them."
+            "These sites could not be probed, so compile(as:) says nothing about them."
         )
         // Reported as one aggregate failure rather than one per site: when this
         // test raised an issue per rejection, XCTest's console reporter printed
         // only 85 of 157: the visible count silently understated the damage.
         if !rejections.isEmpty {
             XCTFail(
-                "Shader.compile(as:) rejected \(rejections.count) of \(probed) call sites:\n"
+                "Shader.compile(as:) rejected \(rejections.count) of \(probed) application sites:\n"
                 + rejections.joined(separator: "\n")
             )
         }
@@ -252,7 +415,7 @@ final class ShaderBindingTests: XCTestCase {
     }
 
     /// A stand-in argument of the right *type* for each `Shader.Argument`
-    /// factory a call site uses. `compile(as:)` checks types and arity, not
+    /// factory a site uses. `compile(as:)` checks types and arity, not
     /// values, so the values are arbitrary.
     private static func placeholderArgument(for kind: String) throws -> Shader.Argument {
         switch kind {
@@ -271,6 +434,13 @@ final class ShaderBindingTests: XCTestCase {
     }
 
     private struct UnsupportedArgumentKind: Error { let kind: String }
+
+    private static func declarationsByReference() throws -> [String: ShaderBindingDeclarationSite] {
+        try Dictionary(
+            ShaderBindingSourceScanner.scanDeclarations().map { ("\($0.family).\($0.property)", $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+    }
 
     // MARK: - The metallib matches the sources it claims to be built from
 
@@ -354,13 +524,12 @@ final class ShaderBindingTests: XCTestCase {
 }
 
 @available(iOS 18.0, macOS 15.0, tvOS 18.0, visionOS 2.0, *)
-private extension ShaderEffectMethod {
-    var usageType: Shader.UsageType? {
+private extension ShaderBinding.Kind {
+    var usageType: Shader.UsageType {
         switch self {
-        case .color: return .colorEffect
-        case .distortion: return .distortionEffect
-        case .layer: return .layerEffect
-        case .unknown: return nil
+        case .colorEffect: return .colorEffect
+        case .distortionEffect: return .distortionEffect
+        case .layerEffect: return .layerEffect
         }
     }
 }

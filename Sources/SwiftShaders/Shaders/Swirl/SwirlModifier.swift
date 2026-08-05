@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum SwirlShaderBindings: ShaderFamily {
+    /// `half4 swirlTwirl(float2,layer,float2,float2,float,float)`
+    static let swirlTwirl = ShaderBinding.Layer("swirlTwirl", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 bulge(float2,layer,float2,float2,float,float)`
+    static let bulge = ShaderBinding.Layer("bulge", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 swirlPinch(float2,layer,float2,float2,float,float)`
+    static let swirlPinch = ShaderBinding.Layer("swirlPinch", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 vortex(float2,layer,float2,float2,float,float,float)`
+    static let vortex = ShaderBinding.Layer("vortex", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 swirlAnimated(float2,layer,float2,float2,float,float,float)`
+    static let swirlAnimated = ShaderBinding.Layer("swirlAnimated", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 swirl(float2,layer,float2,float2,float,float)`
+    static let swirl = ShaderBinding.Layer("swirl", geometry: .viewSize, sampling: .viewSize)
+
+    static var bindings: [any AnyShaderBinding] {
+        [swirlTwirl, bulge, swirlPinch, vortex, swirlAnimated, swirl]
+    }
+}
+
 // MARK: - Swirl Configuration
 
 /// Swirl effect style presets
@@ -76,18 +98,12 @@ public struct SwirlModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.swirl(
-                        .float2(proxy.size),
-                        .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                        .float(configuration.angleRadians),
-                        .float(configuration.radius)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            SwirlShaderBindings.swirl,
+            .float2(Float(configuration.center.x), Float(configuration.center.y)),
+            .float(configuration.angleRadians),
+            .float(configuration.radius)
+        )
     }
 }
 
@@ -104,19 +120,13 @@ public struct SwirlAnimatedModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.layerEffect(
-                        ShaderLibrary.swiftShaders.swirlAnimated(
-                            .float2(proxy.size),
-                            .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                            .float(time),
-                            .float(configuration.speed),
-                            .float(configuration.radius)
-                        ),
-                        maxSampleOffset: proxy.size
-                    )
-                }
+            content.shaderEffect(
+                SwirlShaderBindings.swirlAnimated,
+                .float2(Float(configuration.center.x), Float(configuration.center.y)),
+                .float(time),
+                .float(configuration.speed),
+                .float(configuration.radius)
+            )
         }
     }
 }
@@ -132,19 +142,13 @@ public struct SwirlVortexModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.vortex(
-                        .float2(proxy.size),
-                        .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                        .float(configuration.angleRadians),
-                        .float(pullStrength),
-                        .float(configuration.radius)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            SwirlShaderBindings.vortex,
+            .float2(Float(configuration.center.x), Float(configuration.center.y)),
+            .float(configuration.angleRadians),
+            .float(pullStrength),
+            .float(configuration.radius)
+        )
     }
 }
 
@@ -165,18 +169,12 @@ public struct SwirlPinchModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.swirlPinch(
-                        .float2(proxy.size),
-                        .float2(Float(center.x), Float(center.y)),
-                        .float(strength),
-                        .float(radius)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            SwirlShaderBindings.swirlPinch,
+            .float2(Float(center.x), Float(center.y)),
+            .float(strength),
+            .float(radius)
+        )
     }
 }
 
@@ -197,18 +195,12 @@ public struct BulgeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.bulge(
-                        .float2(proxy.size),
-                        .float2(Float(center.x), Float(center.y)),
-                        .float(strength),
-                        .float(radius)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            SwirlShaderBindings.bulge,
+            .float2(Float(center.x), Float(center.y)),
+            .float(strength),
+            .float(radius)
+        )
     }
 }
 
@@ -229,18 +221,12 @@ public struct SwirlTwirlModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.swirlTwirl(
-                        .float2(proxy.size),
-                        .float2(Float(center.x), Float(center.y)),
-                        .float(angle * .pi / 180.0),
-                        .float(falloff)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            SwirlShaderBindings.swirlTwirl,
+            .float2(Float(center.x), Float(center.y)),
+            .float(angle * .pi / 180.0),
+            .float(falloff)
+        )
     }
 }
 

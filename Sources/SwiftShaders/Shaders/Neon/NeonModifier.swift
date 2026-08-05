@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum NeonShaderBindings: ShaderFamily {
+    /// `half4 neonTint(float2,half4,float3,float)`
+    static let neonTint = ShaderBinding.Color("neonTint", geometry: .plain)
+    /// `half4 neonElectric(float2,half4,float2,float,float3,float3,float)`
+    static let neonElectric = ShaderBinding.Color("neonElectric", geometry: .viewSize)
+    /// `half4 neonColorShift(float2,half4,float2,float,float)`
+    static let neonColorShift = ShaderBinding.Color("neonColorShift", geometry: .viewSize)
+    /// `half4 neonOutline(float2,layer,float2,float3,float,float)`
+    static let neonOutline = ShaderBinding.Layer("neonOutline", geometry: .viewSize, sampling: .perSite)
+    /// `half4 neonGlow(float2,half4,float3,float,float)`
+    static let neonGlow = ShaderBinding.Color("neonGlow", geometry: .plain)
+
+    static var bindings: [any AnyShaderBinding] {
+        [neonTint, neonElectric, neonColorShift, neonOutline, neonGlow]
+    }
+}
+
 // MARK: - Neon Configuration
 
 /// Neon glow style presets
@@ -101,14 +121,12 @@ public struct NeonGlowModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.glowColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.neonGlow(
-                    .float3(r, g, b),
-                    .float(configuration.intensity),
-                    .float(configuration.threshold)
-                )
-            )
+        return content.shaderEffect(
+            NeonShaderBindings.neonGlow,
+            .float3(r, g, b),
+            .float(configuration.intensity),
+            .float(configuration.threshold)
+        )
     }
 }
 
@@ -123,18 +141,13 @@ public struct NeonOutlineModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.glowColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.neonOutline(
-                        .float2(proxy.size),
-                        .float3(r, g, b),
-                        .float(configuration.glowWidth),
-                        .float(configuration.intensity)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.glowWidth), height: CGFloat(configuration.glowWidth))
-                )
-            }
+        return content.shaderEffect(
+            NeonShaderBindings.neonOutline,
+            .float3(r, g, b),
+            .float(configuration.glowWidth),
+            .float(configuration.intensity),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.glowWidth), height: CGFloat(configuration.glowWidth))
+        )
     }
 }
 
@@ -151,16 +164,11 @@ public struct NeonColorShiftModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.neonColorShift(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(speed)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                NeonShaderBindings.neonColorShift,
+                .float(time),
+                .float(speed)
+            )
         }
     }
 }
@@ -181,18 +189,13 @@ public struct NeonElectricModifier: ViewModifier {
         return TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.neonElectric(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float3(r1, g1, b1),
-                            .float3(r2, g2, b2),
-                            .float(configuration.speed)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                NeonShaderBindings.neonElectric,
+                .float(time),
+                .float3(r1, g1, b1),
+                .float3(r2, g2, b2),
+                .float(configuration.speed)
+            )
         }
     }
 }
@@ -210,13 +213,11 @@ public struct NeonTintModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(color)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.neonTint(
-                    .float3(r, g, b),
-                    .float(intensity)
-                )
-            )
+        return content.shaderEffect(
+            NeonShaderBindings.neonTint,
+            .float3(r, g, b),
+            .float(intensity)
+        )
     }
 }
 

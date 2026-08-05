@@ -1,5 +1,22 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum RippleShaderBindings: ShaderFamily {
+    /// `float2 ripple(float2,float4,float,float,float,float,float,float)`
+    ///
+    /// `.perSite` because `RippleModifier` exposes the sample offset as
+    /// configuration while `AnimatedRippleModifier` fixes it at 50×50.
+    static let ripple = ShaderBinding.Distortion("ripple", geometry: .boundingRect, sampling: .perSite)
+    /// `float2 multiRipple(float2,float4,float,float,float,float,float)`
+    static let multiRipple = ShaderBinding.Distortion("multiRipple", geometry: .boundingRect, sampling: .fixed(width: 60, height: 60))
+
+    static var bindings: [any AnyShaderBinding] {
+        [ripple, multiRipple]
+    }
+}
+
 // MARK: - RippleModifier
 
 /// A view modifier that applies a water ripple distortion effect.
@@ -88,16 +105,14 @@ public struct RippleModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.ripple(
-                .boundingRect,
-                .float(time),
-                .float(origin.x),
-                .float(origin.y),
-                .float(amplitude),
-                .float(frequency),
-                .float(decay)
-            ),
+        content.shaderEffect(
+            RippleShaderBindings.ripple,
+            .float(time),
+            .float(origin.x),
+            .float(origin.y),
+            .float(amplitude),
+            .float(frequency),
+            .float(decay),
             maxSampleOffset: maxSampleOffset
         )
     }
@@ -137,16 +152,13 @@ public struct MultiRippleModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.multiRipple(
-                .boundingRect,
-                .float(time),
-                .float(rippleCount),
-                .float(amplitude),
-                .float(frequency),
-                .float(decay)
-            ),
-            maxSampleOffset: CGSize(width: 60, height: 60)
+        content.shaderEffect(
+            RippleShaderBindings.multiRipple,
+            .float(time),
+            .float(rippleCount),
+            .float(amplitude),
+            .float(frequency),
+            .float(decay)
         )
     }
 }
@@ -187,16 +199,14 @@ public struct AnimatedRippleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         TimelineView(.animation) { timeline in
             let time = timeline.date.timeIntervalSinceReferenceDate * speed
-            content.distortionEffect(
-                ShaderLibrary.swiftShaders.ripple(
-                    .boundingRect,
-                    .float(time),
-                    .float(origin.x),
-                    .float(origin.y),
-                    .float(amplitude),
-                    .float(frequency),
-                    .float(decay)
-                ),
+            content.shaderEffect(
+                RippleShaderBindings.ripple,
+                .float(time),
+                .float(origin.x),
+                .float(origin.y),
+                .float(amplitude),
+                .float(frequency),
+                .float(decay),
                 maxSampleOffset: CGSize(width: 50, height: 50)
             )
         }

@@ -1,5 +1,25 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum FireShaderBindings: ShaderFamily {
+    /// `half4 lava(float2,half4,float4,float,float,float,float)`
+    static let lava = ShaderBinding.Color("lava", geometry: .boundingRect)
+    /// `half4 embers(float2,half4,float4,float,float,float,float)`
+    static let embers = ShaderBinding.Color("embers", geometry: .boundingRect)
+    /// `half4 fireball(float2,half4,float4,float,float,float,float,float)`
+    static let fireball = ShaderBinding.Color("fireball", geometry: .boundingRect)
+    /// `half4 torchFlame(float2,half4,float4,float,float,float,float)`
+    static let torchFlame = ShaderBinding.Color("torchFlame", geometry: .boundingRect)
+    /// `half4 fire(float2,half4,float4,float,float,float,float)`
+    static let fire = ShaderBinding.Color("fire", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [lava, embers, fireball, torchFlame, fire]
+    }
+}
+
 // MARK: - FireModifier
 
 /// A view modifier that applies procedural fire effects.
@@ -57,14 +77,12 @@ public struct FireModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.fire(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(scale),
-                .float(speed)
-            )
+        content.shaderEffect(
+            FireShaderBindings.fire,
+            .float(time),
+            .float(intensity),
+            .float(scale),
+            .float(speed)
         )
     }
 }
@@ -94,14 +112,12 @@ public struct TorchFlameModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.torchFlame(
-                .boundingRect,
-                .float(time),
-                .float(flameHeight),
-                .float(flameWidth),
-                .float(flickerSpeed)
-            )
+        content.shaderEffect(
+            FireShaderBindings.torchFlame,
+            .float(time),
+            .float(flameHeight),
+            .float(flameWidth),
+            .float(flickerSpeed)
         )
     }
 }
@@ -131,15 +147,13 @@ public struct FireballModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.fireball(
-                .boundingRect,
-                .float(time),
-                .float(center.x),
-                .float(center.y),
-                .float(radius),
-                .float(turbulence)
-            )
+        content.shaderEffect(
+            FireShaderBindings.fireball,
+            .float(time),
+            .float(center.x),
+            .float(center.y),
+            .float(radius),
+            .float(turbulence)
         )
     }
 }
@@ -169,14 +183,12 @@ public struct EmbersModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.embers(
-                .boundingRect,
-                .float(time),
-                .float(density),
-                .float(speed),
-                .float(size)
-            )
+        content.shaderEffect(
+            FireShaderBindings.embers,
+            .float(time),
+            .float(density),
+            .float(speed),
+            .float(size)
         )
     }
 }
@@ -206,14 +218,12 @@ public struct LavaModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.lava(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(flowSpeed),
-                .float(coolAmount)
-            )
+        content.shaderEffect(
+            FireShaderBindings.lava,
+            .float(time),
+            .float(scale),
+            .float(flowSpeed),
+            .float(coolAmount)
         )
     }
 }

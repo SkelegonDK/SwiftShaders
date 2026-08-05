@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum SketchShaderBindings: ShaderFamily {
+    /// `half4 sketchWatercolor(float2,layer,float2,float,float)`
+    static let sketchWatercolor = ShaderBinding.Layer("sketchWatercolor", geometry: .viewSize, sampling: .perSite)
+    /// `half4 sketchCharcoal(float2,layer,float2,float,float3,float3)`
+    static let sketchCharcoal = ShaderBinding.Layer("sketchCharcoal", geometry: .viewSize, sampling: .perSite)
+    /// `half4 sketchInk(float2,layer,float2,float,float,float3,float3)`
+    static let sketchInk = ShaderBinding.Layer("sketchInk", geometry: .viewSize, sampling: .fixed(width: 5, height: 5))
+    /// `half4 sketchCrossHatch(float2,layer,float2,float,float,float3,float3)`
+    static let sketchCrossHatch = ShaderBinding.Layer("sketchCrossHatch", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+    /// `half4 sketchPencil(float2,layer,float2,float,float3,float3)`
+    static let sketchPencil = ShaderBinding.Layer("sketchPencil", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+
+    static var bindings: [any AnyShaderBinding] {
+        [sketchWatercolor, sketchCharcoal, sketchInk, sketchCrossHatch, sketchPencil]
+    }
+}
+
 // MARK: - Sketch Configuration
 
 /// Sketch effect style presets
@@ -87,18 +107,12 @@ public struct SketchPencilModifier: ViewModifier {
         let (pr, pg, pb) = colorToFloat3(configuration.paperColor)
         let (ir, ig, ib) = colorToFloat3(configuration.inkColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sketchPencil(
-                        .float2(proxy.size),
-                        .float(configuration.lineIntensity),
-                        .float3(pr, pg, pb),
-                        .float3(ir, ig, ib)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        return content.shaderEffect(
+            SketchShaderBindings.sketchPencil,
+            .float(configuration.lineIntensity),
+            .float3(pr, pg, pb),
+            .float3(ir, ig, ib)
+        )
     }
 }
 
@@ -114,19 +128,13 @@ public struct SketchCrossHatchModifier: ViewModifier {
         let (pr, pg, pb) = colorToFloat3(configuration.paperColor)
         let (ir, ig, ib) = colorToFloat3(configuration.inkColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sketchCrossHatch(
-                        .float2(proxy.size),
-                        .float(configuration.lineSpacing),
-                        .float(configuration.lineWidth),
-                        .float3(pr, pg, pb),
-                        .float3(ir, ig, ib)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        return content.shaderEffect(
+            SketchShaderBindings.sketchCrossHatch,
+            .float(configuration.lineSpacing),
+            .float(configuration.lineWidth),
+            .float3(pr, pg, pb),
+            .float3(ir, ig, ib)
+        )
     }
 }
 
@@ -142,19 +150,13 @@ public struct SketchInkModifier: ViewModifier {
         let (pr, pg, pb) = colorToFloat3(configuration.paperColor)
         let (ir, ig, ib) = colorToFloat3(configuration.inkColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sketchInk(
-                        .float2(proxy.size),
-                        .float(configuration.threshold),
-                        .float(configuration.lineWidth),
-                        .float3(pr, pg, pb),
-                        .float3(ir, ig, ib)
-                    ),
-                    maxSampleOffset: CGSize(width: 5, height: 5)
-                )
-            }
+        return content.shaderEffect(
+            SketchShaderBindings.sketchInk,
+            .float(configuration.threshold),
+            .float(configuration.lineWidth),
+            .float3(pr, pg, pb),
+            .float3(ir, ig, ib)
+        )
     }
 }
 
@@ -170,18 +172,13 @@ public struct SketchCharcoalModifier: ViewModifier {
         let (pr, pg, pb) = colorToFloat3(configuration.paperColor)
         let (ir, ig, ib) = colorToFloat3(configuration.inkColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sketchCharcoal(
-                        .float2(proxy.size),
-                        .float(configuration.smudgeAmount),
-                        .float3(pr, pg, pb),
-                        .float3(ir, ig, ib)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.smudgeAmount), height: CGFloat(configuration.smudgeAmount))
-                )
-            }
+        return content.shaderEffect(
+            SketchShaderBindings.sketchCharcoal,
+            .float(configuration.smudgeAmount),
+            .float3(pr, pg, pb),
+            .float3(ir, ig, ib),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.smudgeAmount), height: CGFloat(configuration.smudgeAmount))
+        )
     }
 }
 
@@ -196,17 +193,12 @@ public struct SketchWatercolorModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sketchWatercolor(
-                        .float2(proxy.size),
-                        .float(bleedAmount),
-                        .float(edgeDarkening)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(bleedAmount * 2), height: CGFloat(bleedAmount * 2))
-                )
-            }
+        content.shaderEffect(
+            SketchShaderBindings.sketchWatercolor,
+            .float(bleedAmount),
+            .float(edgeDarkening),
+            maxSampleOffset: CGSize(width: CGFloat(bleedAmount * 2), height: CGFloat(bleedAmount * 2))
+        )
     }
 }
 

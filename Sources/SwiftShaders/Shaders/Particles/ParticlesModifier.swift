@@ -5,6 +5,28 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum ParticlesShaderBindings: ShaderFamily {
+    /// `half4 particlesFireflies(float2,half4,float2,float,float,float3,float)`
+    static let particlesFireflies = ShaderBinding.Color("particlesFireflies", geometry: .viewSize)
+    /// `half4 particlesConfetti(float2,half4,float2,float,float,float)`
+    static let particlesConfetti = ShaderBinding.Color("particlesConfetti", geometry: .viewSize)
+    /// `half4 particlesStarField(float2,half4,float2,float,float,float)`
+    static let particlesStarField = ShaderBinding.Color("particlesStarField", geometry: .viewSize)
+    /// `half4 particlesRising(float2,half4,float2,float,float,float,float,float3)`
+    static let particlesRising = ShaderBinding.Color("particlesRising", geometry: .viewSize)
+    /// `half4 particlesFalling(float2,half4,float2,float,float,float,float,float3)`
+    static let particlesFalling = ShaderBinding.Color("particlesFalling", geometry: .viewSize)
+    /// `half4 particlesSparkle(float2,half4,float2,float,float,float3,float)`
+    static let particlesSparkle = ShaderBinding.Color("particlesSparkle", geometry: .viewSize)
+
+    static var bindings: [any AnyShaderBinding] {
+        [particlesFireflies, particlesConfetti, particlesStarField, particlesRising, particlesFalling, particlesSparkle]
+    }
+}
+
 // MARK: - Particles Configuration
 
 /// Particle effect type presets
@@ -114,18 +136,13 @@ public struct SparkleModifier: ViewModifier {
         return TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.particlesSparkle(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.density),
-                            .float3(r, g, b),
-                            .float(configuration.intensity)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ParticlesShaderBindings.particlesSparkle,
+                .float(time),
+                .float(configuration.density),
+                .float3(r, g, b),
+                .float(configuration.intensity)
+            )
         }
     }
 }
@@ -145,19 +162,14 @@ public struct FallingParticlesModifier: ViewModifier {
         return TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.particlesFalling(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.speed),
-                            .float(configuration.density),
-                            .float(configuration.particleSize),
-                            .float3(r, g, b)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ParticlesShaderBindings.particlesFalling,
+                .float(time),
+                .float(configuration.speed),
+                .float(configuration.density),
+                .float(configuration.particleSize),
+                .float3(r, g, b)
+            )
         }
     }
 }
@@ -177,19 +189,14 @@ public struct RisingParticlesModifier: ViewModifier {
         return TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.particlesRising(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.speed),
-                            .float(configuration.density),
-                            .float(configuration.particleSize),
-                            .float3(r, g, b)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ParticlesShaderBindings.particlesRising,
+                .float(time),
+                .float(configuration.speed),
+                .float(configuration.density),
+                .float(configuration.particleSize),
+                .float3(r, g, b)
+            )
         }
     }
 }
@@ -209,17 +216,12 @@ public struct StarFieldModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.particlesStarField(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(density),
-                            .float(travelSpeed)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ParticlesShaderBindings.particlesStarField,
+                .float(time),
+                .float(density),
+                .float(travelSpeed)
+            )
         }
     }
 }
@@ -239,17 +241,12 @@ public struct ConfettiModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.particlesConfetti(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(density),
-                            .float(fallSpeed)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ParticlesShaderBindings.particlesConfetti,
+                .float(time),
+                .float(density),
+                .float(fallSpeed)
+            )
         }
     }
 }
@@ -269,18 +266,13 @@ public struct FirefliesModifier: ViewModifier {
         return TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.particlesFireflies(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.count),
-                            .float3(r, g, b),
-                            .float(0.05)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                ParticlesShaderBindings.particlesFireflies,
+                .float(time),
+                .float(configuration.count),
+                .float3(r, g, b),
+                .float(0.05)
+            )
         }
     }
 }

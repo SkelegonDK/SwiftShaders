@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum NoiseShaderBindings: ShaderFamily {
+    /// `float2 turbulence(float2,float4,float,float,float,float)`
+    static let turbulence = ShaderBinding.Distortion("turbulence", geometry: .boundingRect, sampling: .fixed(width: 60, height: 60))
+    /// `half4 noiseVoronoi(float2,half4,float4,float,float,float)`
+    static let noiseVoronoi = ShaderBinding.Color("noiseVoronoi", geometry: .boundingRect)
+    /// `half4 fbmNoise(float2,half4,float4,float,float,float,float,float)`
+    static let fbmNoise = ShaderBinding.Color("fbmNoise", geometry: .boundingRect)
+    /// `float2 perlinDistort(float2,float4,float,float,float)`
+    static let perlinDistort = ShaderBinding.Distortion("perlinDistort", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `half4 filmGrain(float2,half4,float4,float,float,float)`
+    static let filmGrain = ShaderBinding.Color("filmGrain", geometry: .boundingRect)
+    /// `half4 noise(float2,half4,float4,float,float,float)`
+    static let noise = ShaderBinding.Color("noise", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [turbulence, noiseVoronoi, fbmNoise, perlinDistort, filmGrain, noise]
+    }
+}
+
 // MARK: - NoiseModifier
 
 /// A view modifier that applies procedural noise effects.
@@ -50,13 +72,11 @@ public struct NoiseModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.noise(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(scale)
-            )
+        content.shaderEffect(
+            NoiseShaderBindings.noise,
+            .float(time),
+            .float(intensity),
+            .float(scale)
         )
     }
 }
@@ -87,13 +107,11 @@ public struct FilmGrainModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.filmGrain(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(size)
-            )
+        content.shaderEffect(
+            NoiseShaderBindings.filmGrain,
+            .float(time),
+            .float(intensity),
+            .float(size)
         )
     }
 }
@@ -120,14 +138,11 @@ public struct PerlinDistortModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.perlinDistort(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(scale)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            NoiseShaderBindings.perlinDistort,
+            .float(time),
+            .float(intensity),
+            .float(scale)
         )
     }
 }
@@ -160,15 +175,13 @@ public struct FBMNoiseModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.fbmNoise(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(octaves),
-                .float(lacunarity),
-                .float(gain)
-            )
+        content.shaderEffect(
+            NoiseShaderBindings.fbmNoise,
+            .float(time),
+            .float(scale),
+            .float(octaves),
+            .float(lacunarity),
+            .float(gain)
         )
     }
 }
@@ -195,13 +208,11 @@ public struct NoiseVoronoiModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.noiseVoronoi(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(intensity)
-            )
+        content.shaderEffect(
+            NoiseShaderBindings.noiseVoronoi,
+            .float(time),
+            .float(scale),
+            .float(intensity)
         )
     }
 }
@@ -231,15 +242,12 @@ public struct TurbulenceModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.turbulence(
-                .boundingRect,
-                .float(time),
-                .float(intensity),
-                .float(scale),
-                .float(octaves)
-            ),
-            maxSampleOffset: CGSize(width: 60, height: 60)
+        content.shaderEffect(
+            NoiseShaderBindings.turbulence,
+            .float(time),
+            .float(intensity),
+            .float(scale),
+            .float(octaves)
         )
     }
 }

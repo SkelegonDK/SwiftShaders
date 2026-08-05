@@ -1,5 +1,31 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum RaymarchingShaderBindings: ShaderFamily {
+    /// `half4 blackHole(float2,half4,float4,float,float,float,float,float)`
+    static let blackHole = ShaderBinding.Color("blackHole", geometry: .boundingRect)
+    /// `half4 fractalTerrain(float2,half4,float4,float,float,float,float,float,float)`
+    static let fractalTerrain = ShaderBinding.Color("fractalTerrain", geometry: .boundingRect)
+    /// `half4 cloudsVolumetric(float2,half4,float4,float,float,float,float,float,float)`
+    static let cloudsVolumetric = ShaderBinding.Color("cloudsVolumetric", geometry: .boundingRect)
+    /// `half4 tunnel(float2,half4,float4,float,float,float,float,float,float)`
+    static let tunnel = ShaderBinding.Color("tunnel", geometry: .boundingRect)
+    /// `half4 infiniteGrid(float2,half4,float4,float,float,float,float,float,float)`
+    static let infiniteGrid = ShaderBinding.Color("infiniteGrid", geometry: .boundingRect)
+    /// `half4 sdfShapes(float2,half4,float4,float,float,float,float,float)`
+    static let sdfShapes = ShaderBinding.Color("sdfShapes", geometry: .boundingRect)
+    /// `half4 metaballs(float2,half4,float4,float,float,float,float,float,float)`
+    static let metaballs = ShaderBinding.Color("metaballs", geometry: .boundingRect)
+    /// `half4 raymarching(float2,half4,float4,float,float,float,float,float)`
+    static let raymarching = ShaderBinding.Color("raymarching", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [blackHole, fractalTerrain, cloudsVolumetric, tunnel, infiniteGrid, sdfShapes, metaballs, raymarching]
+    }
+}
+
 // MARK: - RaymarchingModifier
 
 /// A view modifier that applies raymarched 3D effects.
@@ -70,15 +96,13 @@ public struct RaymarchingModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.raymarching(
-                .boundingRect,
-                .float(time),
-                .float(cameraDistance),
-                .float(rotationSpeed),
-                .float(aoStrength),
-                .float(shadowSoftness)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.raymarching,
+            .float(time),
+            .float(cameraDistance),
+            .float(rotationSpeed),
+            .float(aoStrength),
+            .float(shadowSoftness)
         )
     }
 }
@@ -152,16 +176,14 @@ public struct MetaballsModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.metaballs(
-                .boundingRect,
-                .float(time),
-                .float(Double(blobCount)),
-                .float(smoothness),
-                .float(scale),
-                .float(moveSpeed),
-                .float(hue)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.metaballs,
+            .float(time),
+            .float(Double(blobCount)),
+            .float(smoothness),
+            .float(scale),
+            .float(moveSpeed),
+            .float(hue)
         )
     }
 }
@@ -242,15 +264,13 @@ public struct SDFShapesModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.sdfShapes(
-                .boundingRect,
-                .float(time),
-                .float(Double(operation.rawValue)),
-                .float(rotationSpeed),
-                .float(smoothFactor),
-                .float(shapeScale)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.sdfShapes,
+            .float(time),
+            .float(Double(operation.rawValue)),
+            .float(rotationSpeed),
+            .float(smoothFactor),
+            .float(shapeScale)
         )
     }
 }
@@ -313,16 +333,14 @@ public struct InfiniteGridModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.infiniteGrid(
-                .boundingRect,
-                .float(time),
-                .float(gridSize),
-                .float(moveSpeed),
-                .float(lineWidth),
-                .float(fogDistance),
-                .float(hue)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.infiniteGrid,
+            .float(time),
+            .float(gridSize),
+            .float(moveSpeed),
+            .float(lineWidth),
+            .float(fogDistance),
+            .float(hue)
         )
     }
 }
@@ -399,16 +417,14 @@ public struct TunnelModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.tunnel(
-                .boundingRect,
-                .float(time),
-                .float(Double(shape.rawValue)),
-                .float(speed),
-                .float(radius),
-                .float(patternFrequency),
-                .float(twist)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.tunnel,
+            .float(time),
+            .float(Double(shape.rawValue)),
+            .float(speed),
+            .float(radius),
+            .float(patternFrequency),
+            .float(twist)
         )
     }
 }
@@ -471,16 +487,14 @@ public struct CloudsVolumetricModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.cloudsVolumetric(
-                .boundingRect,
-                .float(time),
-                .float(density),
-                .float(coverage),
-                .float(windSpeed),
-                .float(lightAngle),
-                .float(detail)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.cloudsVolumetric,
+            .float(time),
+            .float(density),
+            .float(coverage),
+            .float(windSpeed),
+            .float(lightAngle),
+            .float(detail)
         )
     }
 }
@@ -543,16 +557,14 @@ public struct FractalTerrainModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.fractalTerrain(
-                .boundingRect,
-                .float(time),
-                .float(height),
-                .float(Double(octaves)),
-                .float(cameraHeight),
-                .float(moveSpeed),
-                .float(snowLine)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.fractalTerrain,
+            .float(time),
+            .float(height),
+            .float(Double(octaves)),
+            .float(cameraHeight),
+            .float(moveSpeed),
+            .float(snowLine)
         )
     }
 }
@@ -609,15 +621,13 @@ public struct BlackHoleModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.blackHole(
-                .boundingRect,
-                .float(time),
-                .float(mass),
-                .float(diskBrightness),
-                .float(diskSpeed),
-                .float(starDensity)
-            )
+        content.shaderEffect(
+            RaymarchingShaderBindings.blackHole,
+            .float(time),
+            .float(mass),
+            .float(diskBrightness),
+            .float(diskSpeed),
+            .float(starDensity)
         )
     }
 }

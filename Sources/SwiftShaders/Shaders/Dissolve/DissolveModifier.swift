@@ -1,5 +1,25 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum DissolveShaderBindings: ShaderFamily {
+    /// `half4 pixelDissolve(float2,half4,float4,float,float)`
+    static let pixelDissolve = ShaderBinding.Color("pixelDissolve", geometry: .boundingRect)
+    /// `half4 burnDissolve(float2,half4,float4,float,float,float)`
+    static let burnDissolve = ShaderBinding.Color("burnDissolve", geometry: .boundingRect)
+    /// `half4 radialDissolve(float2,half4,float4,float,float,float,float)`
+    static let radialDissolve = ShaderBinding.Color("radialDissolve", geometry: .boundingRect)
+    /// `half4 directionalDissolve(float2,half4,float4,float,float,float)`
+    static let directionalDissolve = ShaderBinding.Color("directionalDissolve", geometry: .boundingRect)
+    /// `half4 dissolve(float2,half4,float4,float,float,float)`
+    static let dissolve = ShaderBinding.Color("dissolve", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [pixelDissolve, burnDissolve, radialDissolve, directionalDissolve, dissolve]
+    }
+}
+
 // MARK: - DissolveModifier
 
 /// A view modifier that applies dissolve transition effects.
@@ -50,13 +70,11 @@ public struct DissolveModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.dissolve(
-                .boundingRect,
-                .float(progress),
-                .float(scale),
-                .float(edgeWidth)
-            )
+        content.shaderEffect(
+            DissolveShaderBindings.dissolve,
+            .float(progress),
+            .float(scale),
+            .float(edgeWidth)
         )
     }
 }
@@ -87,13 +105,11 @@ public struct DirectionalDissolveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.directionalDissolve(
-                .boundingRect,
-                .float(progress),
-                .float(angle),
-                .float(edgeWidth)
-            )
+        content.shaderEffect(
+            DissolveShaderBindings.directionalDissolve,
+            .float(progress),
+            .float(angle),
+            .float(edgeWidth)
         )
     }
 }
@@ -124,14 +140,12 @@ public struct RadialDissolveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.radialDissolve(
-                .boundingRect,
-                .float(progress),
-                .float(center.x),
-                .float(center.y),
-                .float(edgeWidth)
-            )
+        content.shaderEffect(
+            DissolveShaderBindings.radialDissolve,
+            .float(progress),
+            .float(center.x),
+            .float(center.y),
+            .float(edgeWidth)
         )
     }
 }
@@ -162,13 +176,11 @@ public struct BurnDissolveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.burnDissolve(
-                .boundingRect,
-                .float(progress),
-                .float(scale),
-                .float(burnWidth)
-            )
+        content.shaderEffect(
+            DissolveShaderBindings.burnDissolve,
+            .float(progress),
+            .float(scale),
+            .float(burnWidth)
         )
     }
 }
@@ -195,12 +207,10 @@ public struct PixelDissolveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.pixelDissolve(
-                .boundingRect,
-                .float(progress),
-                .float(pixelSize)
-            )
+        content.shaderEffect(
+            DissolveShaderBindings.pixelDissolve,
+            .float(progress),
+            .float(pixelSize)
         )
     }
 }

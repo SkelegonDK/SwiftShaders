@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum EmbossShaderBindings: ShaderFamily {
+    /// `half4 bumpMap(float2,half4,float2,float,float)`
+    static let bumpMap = ShaderBinding.Color("bumpMap", geometry: .viewSize)
+    /// `half4 embossMetallic(float2,layer,float2,float,float,float3)`
+    static let embossMetallic = ShaderBinding.Layer("embossMetallic", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+    /// `half4 deboss(float2,layer,float2,float)`
+    static let deboss = ShaderBinding.Layer("deboss", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+    /// `half4 embossColor(float2,layer,float2,float,float,float)`
+    static let embossColor = ShaderBinding.Layer("embossColor", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+    /// `half4 emboss(float2,layer,float2,float,float)`
+    static let emboss = ShaderBinding.Layer("emboss", geometry: .viewSize, sampling: .perSite)
+
+    static var bindings: [any AnyShaderBinding] {
+        [bumpMap, embossMetallic, deboss, embossColor, emboss]
+    }
+}
+
 // MARK: - Emboss Configuration
 
 /// Emboss effect style presets
@@ -86,15 +106,12 @@ public struct EmbossModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .layerEffect(
-                ShaderLibrary.swiftShaders.emboss(
-                    .float2(1.0, 1.0), // Will be replaced by proxy
-                    .float(configuration.strength),
-                    .float(configuration.lightAngleRadians)
-                ),
-                maxSampleOffset: .zero
-            )
+        content.shaderEffect(
+            EmbossShaderBindings.emboss,
+            .float(configuration.strength),
+            .float(configuration.lightAngleRadians),
+            maxSampleOffset: .zero
+        )
     }
 }
 
@@ -107,18 +124,12 @@ public struct EmbossColorModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.embossColor(
-                        .float2(proxy.size),
-                        .float(configuration.strength),
-                        .float(configuration.lightAngleRadians),
-                        .float(configuration.colorMix)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        content.shaderEffect(
+            EmbossShaderBindings.embossColor,
+            .float(configuration.strength),
+            .float(configuration.lightAngleRadians),
+            .float(configuration.colorMix)
+        )
     }
 }
 
@@ -131,16 +142,10 @@ public struct DebossModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.deboss(
-                        .float2(proxy.size),
-                        .float(strength)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        content.shaderEffect(
+            EmbossShaderBindings.deboss,
+            .float(strength)
+        )
     }
 }
 
@@ -160,18 +165,12 @@ public struct MetallicEmbossModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToHalf3(configuration.metalColor)
         
-        return content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.embossMetallic(
-                        .float2(proxy.size),
-                        .float(configuration.strength),
-                        .float(configuration.lightAngleRadians),
-                        .float3(r, g, b)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        return content.shaderEffect(
+            EmbossShaderBindings.embossMetallic,
+            .float(configuration.strength),
+            .float(configuration.lightAngleRadians),
+            .float3(r, g, b)
+        )
     }
 }
 
@@ -188,16 +187,11 @@ public struct BumpMapModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.bumpMap(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(depth)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                EmbossShaderBindings.bumpMap,
+                .float(time),
+                .float(depth)
+            )
         }
     }
 }

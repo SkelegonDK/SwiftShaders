@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum KaleidoscopeShaderBindings: ShaderFamily {
+    /// `half4 kaleidoscopeHex(float2,layer,float2,float2,float,float)`
+    static let kaleidoscopeHex = ShaderBinding.Layer("kaleidoscopeHex", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 kaleidoscopeSquare(float2,layer,float2,float2,float,float)`
+    static let kaleidoscopeSquare = ShaderBinding.Layer("kaleidoscopeSquare", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 kaleidoscopeTriangle(float2,layer,float2,float2,float,float)`
+    static let kaleidoscopeTriangle = ShaderBinding.Layer("kaleidoscopeTriangle", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 kaleidoscopeAnimated(float2,layer,float2,float2,float,float,float,float)`
+    static let kaleidoscopeAnimated = ShaderBinding.Layer("kaleidoscopeAnimated", geometry: .viewSize, sampling: .viewSize)
+    /// `half4 kaleidoscope(float2,layer,float2,float2,float,float)`
+    static let kaleidoscope = ShaderBinding.Layer("kaleidoscope", geometry: .viewSize, sampling: .viewSize)
+
+    static var bindings: [any AnyShaderBinding] {
+        [kaleidoscopeHex, kaleidoscopeSquare, kaleidoscopeTriangle, kaleidoscopeAnimated, kaleidoscope]
+    }
+}
+
 // MARK: - Kaleidoscope Configuration
 
 /// Kaleidoscope pattern types
@@ -81,18 +101,12 @@ public struct KaleidoscopeModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.kaleidoscope(
-                        .float2(proxy.size),
-                        .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                        .float(configuration.segments),
-                        .float(configuration.rotationRadians)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            KaleidoscopeShaderBindings.kaleidoscope,
+            .float2(Float(configuration.center.x), Float(configuration.center.y)),
+            .float(configuration.segments),
+            .float(configuration.rotationRadians)
+        )
     }
 }
 
@@ -109,20 +123,14 @@ public struct KaleidoscopeAnimatedModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.layerEffect(
-                        ShaderLibrary.swiftShaders.kaleidoscopeAnimated(
-                            .float2(proxy.size),
-                            .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                            .float(configuration.segments),
-                            .float(time),
-                            .float(configuration.animationSpeed),
-                            .float(configuration.zoomSpeed)
-                        ),
-                        maxSampleOffset: proxy.size
-                    )
-                }
+            content.shaderEffect(
+                KaleidoscopeShaderBindings.kaleidoscopeAnimated,
+                .float2(Float(configuration.center.x), Float(configuration.center.y)),
+                .float(configuration.segments),
+                .float(time),
+                .float(configuration.animationSpeed),
+                .float(configuration.zoomSpeed)
+            )
         }
     }
 }
@@ -136,18 +144,12 @@ public struct KaleidoscopeTriangleModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.kaleidoscopeTriangle(
-                        .float2(proxy.size),
-                        .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                        .float(configuration.scale),
-                        .float(configuration.rotationRadians)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            KaleidoscopeShaderBindings.kaleidoscopeTriangle,
+            .float2(Float(configuration.center.x), Float(configuration.center.y)),
+            .float(configuration.scale),
+            .float(configuration.rotationRadians)
+        )
     }
 }
 
@@ -160,18 +162,12 @@ public struct KaleidoscopeSquareModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.kaleidoscopeSquare(
-                        .float2(proxy.size),
-                        .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                        .float(configuration.scale),
-                        .float(configuration.rotationRadians)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            KaleidoscopeShaderBindings.kaleidoscopeSquare,
+            .float2(Float(configuration.center.x), Float(configuration.center.y)),
+            .float(configuration.scale),
+            .float(configuration.rotationRadians)
+        )
     }
 }
 
@@ -184,18 +180,12 @@ public struct KaleidoscopeHexModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.kaleidoscopeHex(
-                        .float2(proxy.size),
-                        .float2(Float(configuration.center.x), Float(configuration.center.y)),
-                        .float(configuration.scale),
-                        .float(configuration.rotationRadians)
-                    ),
-                    maxSampleOffset: proxy.size
-                )
-            }
+        content.shaderEffect(
+            KaleidoscopeShaderBindings.kaleidoscopeHex,
+            .float2(Float(configuration.center.x), Float(configuration.center.y)),
+            .float(configuration.scale),
+            .float(configuration.rotationRadians)
+        )
     }
 }
 

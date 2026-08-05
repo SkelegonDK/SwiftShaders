@@ -1,5 +1,23 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum ChromaticAberrationShaderBindings: ShaderFamily {
+    /// `half4 rgbSplit(float2,half4,float4,float,float)`
+    static let rgbSplit = ShaderBinding.Color("rgbSplit", geometry: .boundingRect)
+    /// `half4 pulsingChromatic(float2,half4,float4,float,float,float,float)`
+    static let pulsingChromatic = ShaderBinding.Color("pulsingChromatic", geometry: .boundingRect)
+    /// `half4 directionalChromatic(float2,half4,float4,float,float)`
+    static let directionalChromatic = ShaderBinding.Color("directionalChromatic", geometry: .boundingRect)
+    /// `half4 chromaticAberration(float2,half4,float4,float,float,float)`
+    static let chromaticAberration = ShaderBinding.Color("chromaticAberration", geometry: .boundingRect)
+
+    static var bindings: [any AnyShaderBinding] {
+        [rgbSplit, pulsingChromatic, directionalChromatic, chromaticAberration]
+    }
+}
+
 // MARK: - ChromaticModifier
 
 /// A view modifier that applies chromatic aberration effect.
@@ -52,13 +70,11 @@ public struct ChromaticModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.chromaticAberration(
-                .boundingRect,
-                .float(intensity),
-                .float(center.x),
-                .float(center.y)
-            )
+        content.shaderEffect(
+            ChromaticAberrationShaderBindings.chromaticAberration,
+            .float(intensity),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -82,12 +98,10 @@ public struct DirectionalChromaticModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.directionalChromatic(
-                .boundingRect,
-                .float(intensity),
-                .float(angle)
-            )
+        content.shaderEffect(
+            ChromaticAberrationShaderBindings.directionalChromatic,
+            .float(intensity),
+            .float(angle)
         )
     }
 }
@@ -122,14 +136,12 @@ public struct PulsingChromaticModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.pulsingChromatic(
-                .boundingRect,
-                .float(time),
-                .float(baseIntensity),
-                .float(pulseSpeed),
-                .float(pulseAmount)
-            )
+        content.shaderEffect(
+            ChromaticAberrationShaderBindings.pulsingChromatic,
+            .float(time),
+            .float(baseIntensity),
+            .float(pulseSpeed),
+            .float(pulseAmount)
         )
     }
 }
@@ -153,12 +165,10 @@ public struct RGBSplitModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.rgbSplit(
-                .boundingRect,
-                .float(splitX),
-                .float(splitY)
-            )
+        content.shaderEffect(
+            ChromaticAberrationShaderBindings.rgbSplit,
+            .float(splitX),
+            .float(splitY)
         )
     }
 }

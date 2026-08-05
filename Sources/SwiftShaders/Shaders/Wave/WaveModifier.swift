@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum WaveShaderBindings: ShaderFamily {
+    /// `float2 jellyWave(float2,float4,float,float,float,float)`
+    static let jellyWave = ShaderBinding.Distortion("jellyWave", geometry: .boundingRect, sampling: .fixed(width: 40, height: 40))
+    /// `float2 liquidWave(float2,float4,float,float,float,float)`
+    static let liquidWave = ShaderBinding.Distortion("liquidWave", geometry: .boundingRect, sampling: .fixed(width: 30, height: 30))
+    /// `float2 waveFlag(float2,float4,float,float,float,float)`
+    static let waveFlag = ShaderBinding.Distortion("waveFlag", geometry: .boundingRect, sampling: .fixed(width: 10, height: 60))
+    /// `float2 radialWave(float2,float4,float,float,float,float,float)`
+    static let radialWave = ShaderBinding.Distortion("radialWave", geometry: .boundingRect, sampling: .fixed(width: 50, height: 50))
+    /// `float2 multiWave(float2,float4,float,float,float,float,float,float)`
+    static let multiWave = ShaderBinding.Distortion("multiWave", geometry: .boundingRect, sampling: .fixed(width: 40, height: 40))
+    /// `float2 wave(float2,float4,float,float,float,float)`
+    static let wave = ShaderBinding.Distortion("wave", geometry: .boundingRect, sampling: .fixed(width: 30, height: 30))
+
+    static var bindings: [any AnyShaderBinding] {
+        [jellyWave, liquidWave, waveFlag, radialWave, multiWave, wave]
+    }
+}
+
 // MARK: - WaveModifier
 
 /// A view modifier that applies wave distortion effects.
@@ -58,15 +80,12 @@ public struct WaveModifier: ViewModifier {
     // MARK: - Body
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.wave(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(frequency),
-                .float(direction)
-            ),
-            maxSampleOffset: CGSize(width: 30, height: 30)
+        content.shaderEffect(
+            WaveShaderBindings.wave,
+            .float(time),
+            .float(amplitude),
+            .float(frequency),
+            .float(direction)
         )
     }
 }
@@ -102,17 +121,14 @@ public struct MultiWaveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.multiWave(
-                .boundingRect,
-                .float(time),
-                .float(amplitudeX),
-                .float(amplitudeY),
-                .float(frequencyX),
-                .float(frequencyY),
-                .float(speed)
-            ),
-            maxSampleOffset: CGSize(width: 40, height: 40)
+        content.shaderEffect(
+            WaveShaderBindings.multiWave,
+            .float(time),
+            .float(amplitudeX),
+            .float(amplitudeY),
+            .float(frequencyX),
+            .float(frequencyY),
+            .float(speed)
         )
     }
 }
@@ -142,16 +158,13 @@ public struct RadialWaveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.radialWave(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(frequency),
-                .float(center.x),
-                .float(center.y)
-            ),
-            maxSampleOffset: CGSize(width: 50, height: 50)
+        content.shaderEffect(
+            WaveShaderBindings.radialWave,
+            .float(time),
+            .float(amplitude),
+            .float(frequency),
+            .float(center.x),
+            .float(center.y)
         )
     }
 }
@@ -181,15 +194,12 @@ public struct WaveFlagModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.waveFlag(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(frequency),
-                .float(windSpeed)
-            ),
-            maxSampleOffset: CGSize(width: 10, height: 60)
+        content.shaderEffect(
+            WaveShaderBindings.waveFlag,
+            .float(time),
+            .float(amplitude),
+            .float(frequency),
+            .float(windSpeed)
         )
     }
 }
@@ -219,15 +229,12 @@ public struct LiquidWaveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.liquidWave(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(turbulence),
-                .float(viscosity)
-            ),
-            maxSampleOffset: CGSize(width: 30, height: 30)
+        content.shaderEffect(
+            WaveShaderBindings.liquidWave,
+            .float(time),
+            .float(amplitude),
+            .float(turbulence),
+            .float(viscosity)
         )
     }
 }
@@ -257,15 +264,12 @@ public struct JellyWaveModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.jellyWave(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(stiffness),
-                .float(damping)
-            ),
-            maxSampleOffset: CGSize(width: 40, height: 40)
+        content.shaderEffect(
+            WaveShaderBindings.jellyWave,
+            .float(time),
+            .float(amplitude),
+            .float(stiffness),
+            .float(damping)
         )
     }
 }

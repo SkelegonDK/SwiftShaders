@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum VignetteShaderBindings: ShaderFamily {
+    /// `half4 vignetteAnimated(float2,half4,float2,float,float,float,float,float)`
+    static let vignetteAnimated = ShaderBinding.Color("vignetteAnimated", geometry: .viewSize)
+    /// `half4 vignetteFocus(float2,half4,float2,float2,float,float,float)`
+    static let vignetteFocus = ShaderBinding.Color("vignetteFocus", geometry: .viewSize)
+    /// `half4 vignetteColored(float2,half4,float2,float3,float,float,float)`
+    static let vignetteColored = ShaderBinding.Color("vignetteColored", geometry: .viewSize)
+    /// `half4 vignetteOval(float2,half4,float2,float,float,float,float)`
+    static let vignetteOval = ShaderBinding.Color("vignetteOval", geometry: .viewSize)
+    /// `half4 vignette(float2,half4,float2,float,float,float)`
+    static let vignette = ShaderBinding.Color("vignette", geometry: .viewSize)
+
+    static var bindings: [any AnyShaderBinding] {
+        [vignetteAnimated, vignetteFocus, vignetteColored, vignetteOval, vignette]
+    }
+}
+
 // MARK: - Vignette Configuration
 
 /// Vignette shape presets
@@ -107,17 +127,12 @@ public struct VignetteModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.vignette(
-                        .float2(proxy.size),
-                        .float(configuration.radius),
-                        .float(configuration.softness),
-                        .float(configuration.intensity)
-                    )
-                )
-            }
+        content.shaderEffect(
+            VignetteShaderBindings.vignette,
+            .float(configuration.radius),
+            .float(configuration.softness),
+            .float(configuration.intensity)
+        )
     }
 }
 
@@ -130,18 +145,13 @@ public struct VignetteOvalModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.vignetteOval(
-                        .float2(proxy.size),
-                        .float(configuration.radiusX),
-                        .float(configuration.radiusY),
-                        .float(configuration.softness),
-                        .float(configuration.intensity)
-                    )
-                )
-            }
+        content.shaderEffect(
+            VignetteShaderBindings.vignetteOval,
+            .float(configuration.radiusX),
+            .float(configuration.radiusY),
+            .float(configuration.softness),
+            .float(configuration.intensity)
+        )
     }
 }
 
@@ -156,18 +166,13 @@ public struct VignetteColoredModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(configuration.color)
         
-        return content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.vignetteColored(
-                        .float2(proxy.size),
-                        .float3(r, g, b),
-                        .float(configuration.radius),
-                        .float(configuration.softness),
-                        .float(configuration.intensity)
-                    )
-                )
-            }
+        return content.shaderEffect(
+            VignetteShaderBindings.vignetteColored,
+            .float3(r, g, b),
+            .float(configuration.radius),
+            .float(configuration.softness),
+            .float(configuration.intensity)
+        )
     }
 }
 
@@ -191,18 +196,13 @@ public struct VignetteFocusModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.vignetteFocus(
-                        .float2(proxy.size),
-                        .float2(Float(focusPoint.x), Float(focusPoint.y)),
-                        .float(focusRadius),
-                        .float(falloff),
-                        .float(dimAmount)
-                    )
-                )
-            }
+        content.shaderEffect(
+            VignetteShaderBindings.vignetteFocus,
+            .float2(Float(focusPoint.x), Float(focusPoint.y)),
+            .float(focusRadius),
+            .float(falloff),
+            .float(dimAmount)
+        )
     }
 }
 
@@ -219,19 +219,14 @@ public struct VignetteAnimatedModifier: ViewModifier {
         TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .visualEffect { view, proxy in
-                    view.colorEffect(
-                        ShaderLibrary.swiftShaders.vignetteAnimated(
-                            .float2(proxy.size),
-                            .float(time),
-                            .float(configuration.radius),
-                            .float(0.1), // pulse amount
-                            .float(configuration.animationSpeed),
-                            .float(configuration.intensity)
-                        )
-                    )
-                }
+            content.shaderEffect(
+                VignetteShaderBindings.vignetteAnimated,
+                .float(time),
+                .float(configuration.radius),
+                .float(0.1), // pulse amount
+                .float(configuration.animationSpeed),
+                .float(configuration.intensity)
+            )
         }
     }
 }

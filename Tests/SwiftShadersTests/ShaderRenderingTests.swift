@@ -26,8 +26,9 @@ final class ShaderRenderingTests: XCTestCase {
     func testPixelateQuantisesTheImageAtTheBlockSizeItWasPassed() throws {
         let pixels = try render(
             AnyView(
-                gradient.distortionEffect(
-                    ShaderLibrary.swiftShaders.pixelate(.boundingRect, .float(Float(block))),
+                gradient.shaderEffect(
+                    PixelateShaderBindings.pixelate,
+                    .float(Float(block)),
                     maxSampleOffset: CGSize(width: block, height: block)
                 )
             )
@@ -43,7 +44,7 @@ final class ShaderRenderingTests: XCTestCase {
             XCTAssertTrue(
                 left.isClose(to: right),
                 "Block \(blockIndex) is not flat (\(left) vs \(right)): pixelate did not receive "
-                + "its pixelSize. Check that the call site passes .boundingRect first."
+                + "its pixelSize. Check that its binding declares .boundingRect geometry."
             )
         }
 

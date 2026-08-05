@@ -1,5 +1,27 @@
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum WaterShaderBindings: ShaderFamily {
+    /// `half4 underwater(float2,half4,float4,float,float,float)`
+    static let underwater = ShaderBinding.Color("underwater", geometry: .boundingRect)
+    /// `half4 rainDrops(float2,half4,float4,float,float,float,float)`
+    static let rainDrops = ShaderBinding.Color("rainDrops", geometry: .boundingRect)
+    /// `half4 oceanWaves(float2,half4,float4,float,float,float,float)`
+    static let oceanWaves = ShaderBinding.Color("oceanWaves", geometry: .boundingRect)
+    /// `half4 caustics(float2,half4,float4,float,float,float)`
+    static let caustics = ShaderBinding.Color("caustics", geometry: .boundingRect)
+    /// `half4 waterReflection(float2,half4,float4,float,float,float)`
+    static let waterReflection = ShaderBinding.Color("waterReflection", geometry: .boundingRect)
+    /// `float2 waterSurface(float2,float4,float,float,float,float)`
+    static let waterSurface = ShaderBinding.Distortion("waterSurface", geometry: .boundingRect, sampling: .fixed(width: 20, height: 20))
+
+    static var bindings: [any AnyShaderBinding] {
+        [underwater, rainDrops, oceanWaves, caustics, waterReflection, waterSurface]
+    }
+}
+
 // MARK: - WaterSurfaceModifier
 
 /// A view modifier that applies water surface distortion.
@@ -27,15 +49,12 @@ public struct WaterSurfaceModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.distortionEffect(
-            ShaderLibrary.swiftShaders.waterSurface(
-                .boundingRect,
-                .float(time),
-                .float(amplitude),
-                .float(frequency),
-                .float(speed)
-            ),
-            maxSampleOffset: CGSize(width: 20, height: 20)
+        content.shaderEffect(
+            WaterShaderBindings.waterSurface,
+            .float(time),
+            .float(amplitude),
+            .float(frequency),
+            .float(speed)
         )
     }
 }
@@ -62,13 +81,11 @@ public struct WaterReflectionModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.waterReflection(
-                .boundingRect,
-                .float(time),
-                .float(reflectivity),
-                .float(distortion)
-            )
+        content.shaderEffect(
+            WaterShaderBindings.waterReflection,
+            .float(time),
+            .float(reflectivity),
+            .float(distortion)
         )
     }
 }
@@ -95,13 +112,11 @@ public struct CausticsModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.caustics(
-                .boundingRect,
-                .float(time),
-                .float(scale),
-                .float(intensity)
-            )
+        content.shaderEffect(
+            WaterShaderBindings.caustics,
+            .float(time),
+            .float(scale),
+            .float(intensity)
         )
     }
 }
@@ -131,14 +146,12 @@ public struct OceanWavesModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.oceanWaves(
-                .boundingRect,
-                .float(time),
-                .float(waveHeight),
-                .float(waveLength),
-                .float(foamThreshold)
-            )
+        content.shaderEffect(
+            WaterShaderBindings.oceanWaves,
+            .float(time),
+            .float(waveHeight),
+            .float(waveLength),
+            .float(foamThreshold)
         )
     }
 }
@@ -168,14 +181,12 @@ public struct RainDropsModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.rainDrops(
-                .boundingRect,
-                .float(time),
-                .float(dropDensity),
-                .float(dropSize),
-                .float(rippleSpeed)
-            )
+        content.shaderEffect(
+            WaterShaderBindings.rainDrops,
+            .float(time),
+            .float(dropDensity),
+            .float(dropSize),
+            .float(rippleSpeed)
         )
     }
 }
@@ -202,13 +213,11 @@ public struct UnderwaterModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content.colorEffect(
-            ShaderLibrary.swiftShaders.underwater(
-                .boundingRect,
-                .float(time),
-                .float(depth),
-                .float(murkiness)
-            )
+        content.shaderEffect(
+            WaterShaderBindings.underwater,
+            .float(time),
+            .float(depth),
+            .float(murkiness)
         )
     }
 }

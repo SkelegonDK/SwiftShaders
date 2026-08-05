@@ -5,6 +5,30 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum ThresholdShaderBindings: ShaderFamily {
+    /// `half4 thresholdTriple(float2,half4,float,float,float3,float3,float3)`
+    static let thresholdTriple = ShaderBinding.Color("thresholdTriple", geometry: .plain)
+    /// `half4 thresholdAnimated(float2,half4,float,float,float,float3,float3)`
+    static let thresholdAnimated = ShaderBinding.Color("thresholdAnimated", geometry: .plain)
+    /// `half4 thresholdMultiLevel(float2,half4,float,float3)`
+    static let thresholdMultiLevel = ShaderBinding.Color("thresholdMultiLevel", geometry: .plain)
+    /// `half4 thresholdHalftone(float2,half4,float2,float,float)`
+    static let thresholdHalftone = ShaderBinding.Color("thresholdHalftone", geometry: .viewSize)
+    /// `half4 thresholdSmooth(float2,half4,float,float,float3,float3)`
+    static let thresholdSmooth = ShaderBinding.Color("thresholdSmooth", geometry: .plain)
+    /// `half4 thresholdDithered(float2,half4,float,float3,float3)`
+    static let thresholdDithered = ShaderBinding.Color("thresholdDithered", geometry: .plain)
+    /// `half4 threshold(float2,half4,float,float3,float3)`
+    static let threshold = ShaderBinding.Color("threshold", geometry: .plain)
+
+    static var bindings: [any AnyShaderBinding] {
+        [thresholdTriple, thresholdAnimated, thresholdMultiLevel, thresholdHalftone, thresholdSmooth, thresholdDithered, threshold]
+    }
+}
+
 // MARK: - Threshold Configuration
 
 /// Threshold effect style presets
@@ -95,14 +119,12 @@ public struct ThresholdModifier: ViewModifier {
         let (lr, lg, lb) = colorToFloat3(configuration.lowColor)
         let (hr, hg, hb) = colorToFloat3(configuration.highColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.threshold(
-                    .float(configuration.threshold),
-                    .float3(lr, lg, lb),
-                    .float3(hr, hg, hb)
-                )
-            )
+        return content.shaderEffect(
+            ThresholdShaderBindings.threshold,
+            .float(configuration.threshold),
+            .float3(lr, lg, lb),
+            .float3(hr, hg, hb)
+        )
     }
 }
 
@@ -118,14 +140,12 @@ public struct ThresholdDitheredModifier: ViewModifier {
         let (lr, lg, lb) = colorToFloat3(configuration.lowColor)
         let (hr, hg, hb) = colorToFloat3(configuration.highColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.thresholdDithered(
-                    .float(configuration.threshold),
-                    .float3(lr, lg, lb),
-                    .float3(hr, hg, hb)
-                )
-            )
+        return content.shaderEffect(
+            ThresholdShaderBindings.thresholdDithered,
+            .float(configuration.threshold),
+            .float3(lr, lg, lb),
+            .float3(hr, hg, hb)
+        )
     }
 }
 
@@ -141,15 +161,13 @@ public struct ThresholdSmoothModifier: ViewModifier {
         let (lr, lg, lb) = colorToFloat3(configuration.lowColor)
         let (hr, hg, hb) = colorToFloat3(configuration.highColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.thresholdSmooth(
-                    .float(configuration.threshold),
-                    .float(configuration.softness),
-                    .float3(lr, lg, lb),
-                    .float3(hr, hg, hb)
-                )
-            )
+        return content.shaderEffect(
+            ThresholdShaderBindings.thresholdSmooth,
+            .float(configuration.threshold),
+            .float(configuration.softness),
+            .float3(lr, lg, lb),
+            .float3(hr, hg, hb)
+        )
     }
 }
 
@@ -162,16 +180,11 @@ public struct ThresholdHalftoneModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.colorEffect(
-                    ShaderLibrary.swiftShaders.thresholdHalftone(
-                        .float2(proxy.size),
-                        .float(configuration.dotSize),
-                        .float(configuration.angleRadians)
-                    )
-                )
-            }
+        content.shaderEffect(
+            ThresholdShaderBindings.thresholdHalftone,
+            .float(configuration.dotSize),
+            .float(configuration.angleRadians)
+        )
     }
 }
 
@@ -188,13 +201,11 @@ public struct ThresholdMultiLevelModifier: ViewModifier {
     public func body(content: Content) -> some View {
         let (r, g, b) = colorToFloat3(tintColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.thresholdMultiLevel(
-                    .float(levels),
-                    .float3(r, g, b)
-                )
-            )
+        return content.shaderEffect(
+            ThresholdShaderBindings.thresholdMultiLevel,
+            .float(levels),
+            .float3(r, g, b)
+        )
     }
 }
 
@@ -222,16 +233,14 @@ public struct ThresholdAnimatedModifier: ViewModifier {
         return TimelineView(.animation) { timeline in
             let time = startTime.distance(to: timeline.date)
             
-            content
-                .colorEffect(
-                    ShaderLibrary.swiftShaders.thresholdAnimated(
-                        .float(time),
-                        .float(speed),
-                        .float(amplitude),
-                        .float3(lr, lg, lb),
-                        .float3(hr, hg, hb)
-                    )
-                )
+            content.shaderEffect(
+                ThresholdShaderBindings.thresholdAnimated,
+                .float(time),
+                .float(speed),
+                .float(amplitude),
+                .float3(lr, lg, lb),
+                .float3(hr, hg, hb)
+            )
         }
     }
 }
@@ -263,16 +272,14 @@ public struct ThresholdTripleModifier: ViewModifier {
         let (mr, mg, mb) = colorToFloat3(midColor)
         let (lr, lg, lb) = colorToFloat3(lightColor)
         
-        return content
-            .colorEffect(
-                ShaderLibrary.swiftShaders.thresholdTriple(
-                    .float(threshold1),
-                    .float(threshold2),
-                    .float3(dr, dg, db),
-                    .float3(mr, mg, mb),
-                    .float3(lr, lg, lb)
-                )
-            )
+        return content.shaderEffect(
+            ThresholdShaderBindings.thresholdTriple,
+            .float(threshold1),
+            .float(threshold2),
+            .float3(dr, dg, db),
+            .float3(mr, mg, mb),
+            .float3(lr, lg, lb)
+        )
     }
 }
 

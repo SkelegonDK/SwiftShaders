@@ -5,6 +5,26 @@
 
 import SwiftUI
 
+// MARK: - Bindings
+
+/// The binding contracts for this family's stitchable functions.
+enum SharpenShaderBindings: ShaderFamily {
+    /// `half4 sharpenClarity(float2,layer,float2,float,float)`
+    static let sharpenClarity = ShaderBinding.Layer("sharpenClarity", geometry: .viewSize, sampling: .perSite)
+    /// `half4 sharpenEdges(float2,layer,float2,float)`
+    static let sharpenEdges = ShaderBinding.Layer("sharpenEdges", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+    /// `half4 sharpenHighPass(float2,layer,float2,float,float)`
+    static let sharpenHighPass = ShaderBinding.Layer("sharpenHighPass", geometry: .viewSize, sampling: .perSite)
+    /// `half4 unsharpMask(float2,layer,float2,float,float,float)`
+    static let unsharpMask = ShaderBinding.Layer("unsharpMask", geometry: .viewSize, sampling: .perSite)
+    /// `half4 sharpen(float2,layer,float2,float)`
+    static let sharpen = ShaderBinding.Layer("sharpen", geometry: .viewSize, sampling: .fixed(width: 2, height: 2))
+
+    static var bindings: [any AnyShaderBinding] {
+        [sharpenClarity, sharpenEdges, sharpenHighPass, unsharpMask, sharpen]
+    }
+}
+
 // MARK: - Sharpen Configuration
 
 /// Sharpen effect style presets
@@ -66,16 +86,10 @@ public struct SharpenModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sharpen(
-                        .float2(proxy.size),
-                        .float(amount)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        content.shaderEffect(
+            SharpenShaderBindings.sharpen,
+            .float(amount)
+        )
     }
 }
 
@@ -88,18 +102,13 @@ public struct UnsharpMaskModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.unsharpMask(
-                        .float2(proxy.size),
-                        .float(configuration.radius),
-                        .float(configuration.amount),
-                        .float(configuration.threshold)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(configuration.radius + 1), height: CGFloat(configuration.radius + 1))
-                )
-            }
+        content.shaderEffect(
+            SharpenShaderBindings.unsharpMask,
+            .float(configuration.radius),
+            .float(configuration.amount),
+            .float(configuration.threshold),
+            maxSampleOffset: CGSize(width: CGFloat(configuration.radius + 1), height: CGFloat(configuration.radius + 1))
+        )
     }
 }
 
@@ -114,17 +123,12 @@ public struct HighPassSharpenModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sharpenHighPass(
-                        .float2(proxy.size),
-                        .float(radius),
-                        .float(strength)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(radius + 1), height: CGFloat(radius + 1))
-                )
-            }
+        content.shaderEffect(
+            SharpenShaderBindings.sharpenHighPass,
+            .float(radius),
+            .float(strength),
+            maxSampleOffset: CGSize(width: CGFloat(radius + 1), height: CGFloat(radius + 1))
+        )
     }
 }
 
@@ -137,16 +141,10 @@ public struct EdgeEnhanceModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sharpenEdges(
-                        .float2(proxy.size),
-                        .float(amount)
-                    ),
-                    maxSampleOffset: CGSize(width: 2, height: 2)
-                )
-            }
+        content.shaderEffect(
+            SharpenShaderBindings.sharpenEdges,
+            .float(amount)
+        )
     }
 }
 
@@ -161,17 +159,12 @@ public struct ClarityModifier: ViewModifier {
     }
     
     public func body(content: Content) -> some View {
-        content
-            .visualEffect { view, proxy in
-                view.layerEffect(
-                    ShaderLibrary.swiftShaders.sharpenClarity(
-                        .float2(proxy.size),
-                        .float(radius),
-                        .float(amount)
-                    ),
-                    maxSampleOffset: CGSize(width: CGFloat(radius + 1), height: CGFloat(radius + 1))
-                )
-            }
+        content.shaderEffect(
+            SharpenShaderBindings.sharpenClarity,
+            .float(radius),
+            .float(amount),
+            maxSampleOffset: CGSize(width: CGFloat(radius + 1), height: CGFloat(radius + 1))
+        )
     }
 }
 
