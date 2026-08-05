@@ -653,6 +653,77 @@ The interface should make the wrong thing unrepresentable: a caller cannot pick 
 - Do not write a test that constructs a value and asserts its stored properties equal the literals just passed in.
 - Do not assume `ImageRenderer` works (0.9).
 
+### ✅ Phase 6 RESULTS — executed 2026-08-05 (commit `f0854b4`)
+
+**Done. 178 → 65 tests, 0 failures.**
+
+| | |
+|---|---|
+| `ShaderEffectsTests.swift` | **deleted whole** — 1250 lines, 124 tests, 5 suites |
+| `SwiftShadersTests.swift` | 4 tautologies deleted, 2 mixed tests rewritten as clamping-only |
+| `CatalogConsistencyTests.swift` + `Support/EffectCatalogSource.swift` | **new**, 15 tests |
+| `XCTAssertNotNil` in `Tests/` | 38 → **2**, both on genuinely `Optional` values |
+| `Shader.compile(as:)` | **0 rejections of 208** |
+| Acceptance: suite with no shaders | **216 failures** ✅ |
+
+**⚠️ Two of this phase's stated premises were wrong. Do not repeat them.**
+
+1. **"All 155 pass with `Metal/` deleted" was already false before this phase started.** It described the
+   suite as it was at Phase 0. Phases 2–3 added the binding and rendering tests, so the acceptance
+   criterion was *already* met on arrival — measured, not assumed: a metallib built from a placeholder
+   `.metal` declaring no `[[stitchable]]` function produced **216 failures**. The phase's real value was
+   never making the suite fail; it was deleting the 124 tests that could not.
+2. **Item 5 (`Shader.compile(as:)` coverage) and item 6 (golden-pixel test) were already done** by
+   Phases 2 and 3. `ShaderRenderingTests` carries its own negative control. Nothing was added for either.
+
+**How the dead tests were identified — the method matters more than the verdict.** Rather than reading
+them, the whole suite was run against a shader library containing zero stitchable functions. Suites that
+*passed* under that condition prove nothing about shaders:
+
+| Passed with zero shaders | Failed (real coverage) |
+|---|---|
+| `VoronoiShaderTests`, `DisplacementShaderTests`, `ViewExtensionTests`, `EdgeCaseTests`, `PerformanceCharacteristicTests` — **all five from `ShaderEffectsTests.swift`** | `ShaderBindingTests`, `ShaderLibraryIntegrityTests`, `ShaderRenderingTests` |
+| `SwiftShadersTests`, `ShaderCallSiteScannerTests` — legitimately shader-independent (math, config, fixtures); **kept** | |
+
+Its 302 assertions were 262 `XCTAssertEqual` comparing a stored property to the literal just passed to the
+initialiser, 36 `XCTAssertNotNil` on a non-optional `some View`, and exactly 3 others — the two
+`MemoryLayout` ones and the 0.1 s wall-clock loop the plan already called out.
+
+**🔴 The new parser found its own under-scanning bug — this is the lesson of the phase.**
+`EffectCatalogSource` first keyed on a **line prefix**, exactly like `ShaderCallSiteScanner`. That made the
+**21 params the catalogue declares inline** (`params: [.init("angle", -360...360, 180)]`) invisible — and
+the completeness guard invisible to them too, because it counted the same way. **It agreed with itself and
+reported success over 89% of the file.** Both now scan occurrences anywhere on a line, with a word-boundary
+check so the `v.rippleEffect(` calls in the closure bodies are not counted as entries: **91 effects, 194
+params**, up from 173. Proven by breaking one of the previously invisible params and watching the test name
+it by file and line.
+
+> **Generalise this.** A completeness guard that derives its yardstick the same way as the thing it guards
+> is not a guard. The Phase 2 manifest avoids this by construction — its yardstick is the metallib, an
+> independent artefact — but any future scanner needs a yardstick it does not itself produce.
+
+**Negative controls — every new test was proven able to fail, then restored:**
+
+| Control | Result |
+|---|---|
+| Slider default pushed out of range | 🔴 named `EffectCatalog.swift:26` |
+| Same, on a previously *invisible* inline param | 🔴 named `EffectCatalog.swift:133 sepia.intensity` |
+| Gallery effect id duplicated | 🔴 |
+| `ShaderCatalog` id duplicated | 🔴 |
+| `max(1.0, pixelSize)` clamp removed | 🔴 3 assertions |
+| `progress.clamped(to: 0...1)` removed | 🔴 2 assertions |
+
+⚠️ **Two controls silently no-op'd on the first attempt** — a `sed` pattern that never matched and a
+Python replace whose guard was false — and each produced a *green* run that looked like proof. This is the
+Phase 3 lesson recurring in a new form: **always confirm the control actually changed the file** before
+believing the run. `grep` for the edit, or `diff` against a copy.
+
+**Not done, deliberately:** the plan's "categories agree across catalogs". `ShaderCatalog` (30, library)
+and `EffectCatalog` (91, gallery executable) use disjoint id vocabularies and different category enums, so
+a cross-catalogue assertion cannot be written until 7a decides which is authoritative. The invariants that
+hold today are locked instead: ids unique within each catalogue, every entry reachable by its own id, every
+gallery default inside its declared range.
+
 ---
 
 ## Phase 7 — Descriptor, catalogs, clock, Metal header, distribution
