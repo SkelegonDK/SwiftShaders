@@ -11,24 +11,41 @@ import SwiftShadersGalleryCore
 /// well-typed but shifted renders the view **pure black**, not "slightly wrong"
 /// (Phase 3 measured it). A user sees a black rectangle; every test stays green.
 ///
-/// So this sweep asserts two things per entry, and they catch different faults:
+/// So the sweep asserts two things per entry, and they catch different faults:
 ///
 /// - the output **differs from the unshaded control** — the effect did something;
 /// - the output **is not one flat colour** — it did not swallow the view. Pure
 ///   black passes the first check easily, which is why the second exists.
 ///
-/// The source view is deliberately structured in both axes so that a legitimate
-/// effect cannot flatten it by accident: a diagonal four-stop gradient with an
-/// opaque disc on top.
+/// ## The source view, and why it has no gradient
+///
+/// The first version previewed effects over a four-stop `LinearGradient`. That
+/// made the sweep unable to fail: `ImageRenderer` renders a dithered gradient
+/// slightly differently depending on what was rendered before it, and the
+/// resulting noise — 491 in the sum-of-absolute-differences used below — was
+/// larger than several real effects. A negative control that replaced an entry's
+/// closure with the identity stayed green.
+///
+/// Four flat quadrants and a disc dither nothing: the same measurement over the
+/// same 30 interleaved renders drops from 491 to **2**, while the weakest real
+/// effect in the catalogue scores 806. Hard edges also make displacement effects
+/// far more visible than a smooth ramp does.
 @available(macOS 14.0, iOS 17.0, *)
 @MainActor
 final class GalleryRenderSweepTests: XCTestCase {
 
     private let side = 48
 
-    /// Animated entries are rendered at a fixed non-zero time. Zero is a bad
-    /// choice: several shaders multiply by `time` and are identity at t = 0.
-    private let time: Double = 1.7
+    /// How far two renders must be apart to count as different, as a sum of
+    /// absolute byte differences over the whole image.
+    ///
+    /// 64× the measured renderer noise (2) and a sixth of the weakest real
+    /// effect (806), so there is a wide margin on both sides.
+    /// `testTheRendererIsQuietEnoughForTheSweepToMeanAnything` asserts the noise
+    /// is really that small, so this number cannot quietly stop separating them.
+    private let changeThreshold = 128
+
+    // MARK: - The sweep
 
     func testEveryCatalogueEntryRendersSomethingVisible() throws {
         let control = try render(source)
@@ -39,32 +56,36 @@ final class GalleryRenderSweepTests: XCTestCase {
 
         var blank: [String] = []
         var inert: [String] = []
-        var neededMidRange: [String] = []
+        var neededStrongerParameters: [String] = []
 
         for effect in EffectCatalog.all {
-            var pixels = try render(effect.build(AnyView(source), ParamValues(effect.params), time))
-
-            // An effect may legitimately be a no-op at its defaults (a strength
-            // that defaults to 0, a progress that defaults to the start). Retry
-            // with each slider at the middle of its own declared range before
-            // calling it inert.
-            if pixels.matches(control) {
-                pixels = try render(effect.build(AnyView(source), midRange(of: effect), time))
-                if !pixels.matches(control) { neededMidRange.append(effect.id) }
+            // An effect may legitimately be a no-op at its defaults — a strength
+            // that defaults to 0, a colour grade whose defaults are neutral. Try
+            // progressively stronger parameters before calling it inert, and say
+            // which entries needed it: the gallery opens on the defaults, so
+            // those entries show nothing until the user moves a slider.
+            var chosen: Bitmap?
+            for (index, values) in parameterSettings(for: effect).enumerated() {
+                let pixels = try render(effect.build(AnyView(source), values, time))
+                if difference(pixels, control) > changeThreshold {
+                    chosen = pixels
+                    if index > 0 { neededStrongerParameters.append(effect.id) }
+                    break
+                }
+                chosen = pixels
             }
+            guard let pixels = chosen else { continue }
 
-            if pixels.isFlat {
-                blank.append("\(effect.id) renders as one flat colour (\(pixels.colour(x: 1, y: 1)))")
-            } else if pixels.matches(control) {
+            if difference(pixels, control) <= changeThreshold {
                 inert.append("\(effect.id) renders identically to the unshaded view")
+            } else if pixels.isFlat {
+                blank.append("\(effect.id) renders as one flat colour (\(pixels.colour(x: 1, y: 1)))")
             }
         }
 
-        if !neededMidRange.isEmpty {
-            // Not a failure — but the gallery opens on the defaults, so these
-            // entries show nothing until the user moves a slider.
-            print("GalleryRenderSweep: no-ops at their defaults, visible at mid-range: "
-                  + neededMidRange.sorted().joined(separator: ", "))
+        if !neededStrongerParameters.isEmpty {
+            print("GalleryRenderSweep: invisible at their defaults, visible further along the slider: "
+                  + neededStrongerParameters.sorted().joined(separator: ", "))
         }
 
         XCTAssertEqual(
@@ -74,10 +95,33 @@ final class GalleryRenderSweepTests: XCTestCase {
         )
         XCTAssertEqual(
             inert, [],
-            "Catalogue entries that change nothing, even at mid-range parameters:\n"
+            "Catalogue entries that change nothing, at any point on their own sliders:\n"
             + inert.joined(separator: "\n")
         )
     }
+
+    /// The whole sweep rests on two renders of the same view being comparable.
+    /// They are not exactly equal — this is what that costs, measured rather than
+    /// assumed, so that a future OS making rendering noisier fails here instead
+    /// of quietly turning every assertion above into a tautology.
+    func testTheRendererIsQuietEnoughForTheSweepToMeanAnything() throws {
+        let control = try render(source)
+        var worst = 0
+
+        for effect in EffectCatalog.all.prefix(30) {
+            _ = try render(effect.build(AnyView(source), ParamValues(effect.params), time))
+            worst = max(worst, difference(try render(source), control))
+        }
+
+        XCTAssertLessThan(
+            worst, changeThreshold / 4,
+            "Re-rendering the same view differs from the original by \(worst), which is close to "
+            + "the \(changeThreshold) the sweep treats as 'the effect did something'. The sweep "
+            + "can no longer tell an effect from rasterisation noise."
+        )
+    }
+
+    // MARK: - Animation
 
     /// Times to sample an animated entry at.
     ///
@@ -88,21 +132,15 @@ final class GalleryRenderSweepTests: XCTestCase {
     /// first pair tried. Both looked frozen and neither is.
     private let sampleTimes: [Double] = [0.3137, 1.2711, 2.7183, 4.1892]
 
-    /// Animated entries must actually depend on their time argument, or the
-    /// gallery's `TimelineView` is driving a still image.
-    ///
-    /// This exercises the *gallery's* path, where time is an explicit argument
-    /// the catalogue passes. Whether the library's self-animating modifiers
-    /// advance is a separate question, and 7b's.
     /// Entries that take a `time:` argument and provably ignore it, with the
     /// reason each does. Every one was measured, not assumed: the rendered bytes
-    /// are *identical* at all four sample times, so these are not
-    /// under-sensitivity of the probe.
+    /// are *identical* at all four sample times.
     ///
     /// None of the fixes belong to 7a — the first two need a decision about the
     /// Metal function's signature, the third is a shader bug — so they are
     /// recorded here rather than papered over. **Removing an entry from this set
-    /// is the fix.**
+    /// is the fix**, and `testTheTimeIndependentAllowlistIsStillAccurate` makes
+    /// sure the set does not outlive the faults.
     static let knownTimeIndependentEntries: Set<String> = [
         // `VoronoiShader.metal:263` — declares `float time` and then calls
         // `voronoiF1F2(uv, scale, 0.0, 1.0)`: "Static voronoi for consistent
@@ -120,16 +158,18 @@ final class GalleryRenderSweepTests: XCTestCase {
         "infiniteGrid",
     ]
 
+    /// Animated entries must actually depend on their time argument, or the
+    /// gallery's `TimelineView` is driving a still image.
+    ///
+    /// This exercises the *gallery's* path, where time is an explicit argument
+    /// the catalogue passes. Whether the library's self-animating modifiers
+    /// advance is a separate question, and 7b's.
     func testEveryAnimatedEntryDependsOnItsTimeArgument() throws {
         var frozen: [String] = []
 
         for effect in EffectCatalog.all
         where effect.animated && !Self.knownTimeIndependentEntries.contains(effect.id) {
-            let values = midRange(of: effect)
-            let frames = try sampleTimes.map { try render(effect.build(AnyView(source), values, $0)) }
-            if frames.dropFirst().allSatisfy({ $0.matches(frames[0]) }) {
-                frozen.append(effect.id)
-            }
+            if try !movesOverTime(effect) { frozen.append(effect.id) }
         }
 
         XCTAssertEqual(
@@ -139,17 +179,14 @@ final class GalleryRenderSweepTests: XCTestCase {
         )
     }
 
-    /// The allowlist above must stay a list of *real* offenders. If one of them
-    /// starts animating, the entry comes off the list — otherwise the list slowly
-    /// becomes a place where working effects go to stop being checked.
+    /// The allowlist above must stay a list of *real* offenders, or it becomes a
+    /// place where working effects go to stop being checked.
     func testTheTimeIndependentAllowlistIsStillAccurate() throws {
         var nowAnimating: [String] = []
 
         for id in Self.knownTimeIndependentEntries.sorted() {
             let effect = try XCTUnwrap(EffectCatalog.effect(id: id), "\(id) is no longer catalogued")
-            let values = midRange(of: effect)
-            let frames = try sampleTimes.map { try render(effect.build(AnyView(source), values, $0)) }
-            if !frames.dropFirst().allSatisfy({ $0.matches(frames[0]) }) { nowAnimating.append(id) }
+            if try movesOverTime(effect) { nowAnimating.append(id) }
         }
 
         XCTAssertEqual(
@@ -159,27 +196,60 @@ final class GalleryRenderSweepTests: XCTestCase {
         )
     }
 
+    private func movesOverTime(_ effect: Effect) throws -> Bool {
+        let values = midRange(of: effect)
+        let frames = try sampleTimes.map { try render(effect.build(AnyView(source), values, $0)) }
+        // Any measurable movement counts: the question is whether `time` reaches
+        // the shader at all, not whether the animation is vigorous.
+        return frames.dropFirst().contains { difference($0, frames[0]) > changeThreshold / 4 }
+    }
+
     // MARK: - Inputs
 
-    /// Every slider at the middle of its declared range.
+    private let time: Double = 1.7
+
+    /// Parameter settings to try, weakest first: the defaults the gallery opens
+    /// on, then the middle of each slider, then its far end.
+    ///
+    /// The ladder matters. Mid-range alone is wrong for a symmetric slider —
+    /// `rgbSplit`'s `splitX` runs -0.5…0.5, so its midpoint is *no split at all*
+    /// while its default of 0.1 is clearly visible. Defaults alone are wrong for
+    /// `colorGrading`, whose defaults are a neutral grade by construction.
+    private func parameterSettings(for effect: Effect) -> [ParamValues] {
+        [ParamValues(effect.params), midRange(of: effect), extreme(of: effect)]
+    }
+
     private func midRange(of effect: Effect) -> ParamValues {
+        settings(of: effect) { ($0.range.lowerBound + $0.range.upperBound) / 2 }
+    }
+
+    private func extreme(of effect: Effect) -> ParamValues {
+        settings(of: effect) { $0.range.upperBound }
+    }
+
+    private func settings(of effect: Effect, _ value: (EffectParam) -> Double) -> ParamValues {
         var values = ParamValues(effect.params)
-        for (index, param) in effect.params.enumerated() {
-            values[index] = (param.range.lowerBound + param.range.upperBound) / 2
-        }
+        for (index, param) in effect.params.enumerated() { values[index] = value(param) }
         return values
     }
 
+    /// Four flat quadrants and a disc — no gradient anywhere, so nothing dithers.
+    /// See the type's documentation for why that is load-bearing.
     private var source: AnyView {
         AnyView(
-            LinearGradient(
-                colors: [.black, .blue, .orange, .white],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    Color(red: 0.05, green: 0.05, blue: 0.10)
+                    Color(red: 0.95, green: 0.35, blue: 0.05)
+                }
+                HStack(spacing: 0) {
+                    Color(red: 0.10, green: 0.45, blue: 0.95)
+                    Color(red: 0.98, green: 0.98, blue: 0.95)
+                }
+            }
             .overlay(
                 Circle()
-                    .fill(Color(red: 0.1, green: 0.9, blue: 0.3))
+                    .fill(Color(red: 0.10, green: 0.90, blue: 0.30))
                     .frame(width: CGFloat(side) / 3)
             )
             .frame(width: CGFloat(side), height: CGFloat(side))
@@ -187,6 +257,16 @@ final class GalleryRenderSweepTests: XCTestCase {
     }
 
     // MARK: - Rendering
+
+    /// Sum of absolute differences over every byte of the two images.
+    ///
+    /// A whole-image measure rather than a per-pixel comparison because the
+    /// effects differ enormously in *shape*: `rain` changes a few hundred bytes
+    /// by up to 112, `chromaticAberration` changes several thousand by at most 6.
+    /// Either is real; neither is expressible as one tolerance.
+    private func difference(_ a: Bitmap, _ b: Bitmap) -> Int {
+        a.sumOfAbsoluteDifferences(from: b)
+    }
 
     private func render(_ view: AnyView) throws -> Bitmap {
         let renderer = ImageRenderer(content: view)
@@ -198,7 +278,7 @@ final class GalleryRenderSweepTests: XCTestCase {
     struct Bitmap {
         let width: Int
         let height: Int
-        fileprivate let bytes: [UInt8]
+        private let bytes: [UInt8]
 
         init(_ image: CGImage) throws {
             width = image.width
@@ -221,24 +301,16 @@ final class GalleryRenderSweepTests: XCTestCase {
             return Colour(r: bytes[offset], g: bytes[offset + 1], b: bytes[offset + 2], a: bytes[offset + 3])
         }
 
+        func sumOfAbsoluteDifferences(from other: Bitmap) -> Int {
+            guard width == other.width, height == other.height else { return .max }
+            return zip(bytes, other.bytes).reduce(0) { $0 + abs(Int($1.0) - Int($1.1)) }
+        }
+
         /// Every sampled pixel the same — a solid rectangle, transparent or not.
         /// This is what a shader reading shifted arguments produces.
         var isFlat: Bool {
             let first = colour(x: 0, y: 0)
             return probes.allSatisfy { colour(x: $0.x, y: $0.y).isClose(to: first) }
-        }
-
-        /// Byte-exact, over every pixel.
-        ///
-        /// "Did this shader change anything?" is a yes/no question, and both
-        /// bitmaps come from the same renderer in the same process, so there is
-        /// no cross-release rasterisation drift to absorb — only the shader's own
-        /// arithmetic. A coarse lattice with a generous tolerance was tried first
-        /// and called three effects inert that are merely subtle: a one-pixel
-        /// chromatic shift across a smooth gradient moves each channel by less
-        /// than the tolerance nearly everywhere.
-        func matches(_ other: Bitmap) -> Bool {
-            width == other.width && height == other.height && bytes == other.bytes
         }
 
         /// A coarse lattice is enough to tell a solid rectangle from a picture.
