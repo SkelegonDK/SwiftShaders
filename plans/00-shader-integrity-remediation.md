@@ -545,6 +545,52 @@ Either way, resolve the remaining 5 duplicate `View` extension names (`embers`, 
 - Do not stub the missing shaders with pass-through bodies to make the tests green. Delete or implement.
 - Do not leave `smoke` in the Gallery if the module is deleted.
 
+### ✅ Phase 4 RESULTS — executed 2026-08-05
+
+**Deleted, per the user's decision. The binding tests are green: 0 defects across all 208 call sites.**
+
+| | |
+|---|---|
+| `Sources/SwiftShaders/Shaders/FluidSimulation/` | removed (761 lines, 8 modifiers, 8 `View` methods) |
+| `Sources/SwiftShadersGallery/EffectCatalog.swift` | `smoke` entry removed — it was the one effect of this module shipped to users. Catalog: 92 → **91** |
+| Call sites | 216 → **208** |
+| `Shader.compile(as:)` rejections | 8 → **0 of 208** |
+| `swift test` | **178 tests, 0 failures** |
+
+Nothing outside the module referenced it — no other file mentioned any of its eight types. `make build`
+and `make app` both clean; the Gallery packages.
+
+**Duplicate `View` extension names: 7 → 5, as predicted.** Deleting the module resolved the `vortex`
+and `waterSurface` collisions outright.
+
+**⚠️ The remaining 5 were NOT renamed — this is a deliberate deferral, not an oversight.** Every one is
+the same shape: an older static variant taking `Float` and no clock, and a newer animated variant
+taking `time: Double` first.
+
+| Name | Static variant | Animated variant |
+|---|---|---|
+| `embers` | `Particles/…:320` `(density:speed:)` | `Fire/…:272` `(time:density:speed:size:)` |
+| `neonElectric` | `Neon/…:263` `(color:intensity:)` | `Electric/…:282` `(time:glowIntensity:flickerSpeed:)` |
+| `pinch` | `Swirl/…:280` `(strength:radius:)` | `Displacement/…:1134` `(time:amount:radius:center:)` |
+| `twirl` | `Swirl/…:290` `(angle:)` | `Displacement/…:1119` `(time:angle:radius:center:)` |
+| `voronoiNoise` | `Noise/…:297` `(time:scale:intensity:)` | `Voronoi/…:716` `(time:scale:jitter:edgeWidth:)` |
+
+These are legal, label-distinguished overloads bound to genuinely different Metal functions. They are
+**not defects** — no test can be made to fail on them — and renaming any of them is a **breaking change
+to the published public API** (`Package.swift` product and `SwiftShaders.podspec`).
+
+The collision is a *taxonomy* problem: two different effects claiming one name. That is precisely what
+**7a** is for, which already has to reconcile identity and category drift across four competing
+catalogues, and **Phase 5**, which reshapes how effects are addressed at all. Renaming here would churn
+the public API once now and again in 5/7a. → **Folded into 7a.** The `voronoiNoise` pair is the one to
+look at first: both are animated, so it is a true duplicate rather than a static/animated pair.
+
+### Verify (4)
+
+- [x] Binding tests: **0 failures**, all 208 call sites MATCH.
+- [x] `swift build` clean; Gallery builds and packages; no catalogued effect resolves to a missing function.
+- [x] Duplicate `View` method names: 7 → 5, with the intended two resolved.
+
 ---
 
 ## Phase 5 — Deepen: one binding module

@@ -555,15 +555,6 @@ enum EffectCatalog {
             AnyView(v.rainDrops(time: t, density: p[0], size: p[1], rippleSpeed: p[2]))
         },
 
-        Effect("smoke", "Smoke", .elements, "Rising volumetric smoke.",
-               animated: true,
-               params: [
-                .init("density", 0...1, 0.5),
-                .init("riseSpeed", 0...2, 0.3),
-               ]) { v, p, t in
-            AnyView(v.smoke(time: t, density: p[0], riseSpeed: p[1]))
-        },
-
         Effect("frostedGlass", "Frosted Glass", .elements, "Scattered frosted surface.",
                params: [
                 .init("amount", 0...1, 0.5),
