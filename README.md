@@ -15,8 +15,8 @@
 
 <h1 align="center">SwiftShaders</h1>
 
-## 🚀 Killer Feature: Metal-to-SwiftUI Bridge
-Unleash the GPU. Our custom `MetalToSwiftUIBridge` maps complex `.metal` vertex/fragment shaders directly into 1-line SwiftUI view modifiers, combining raw performance with declarative ease.
+## 🚀 Killer Feature: Metal shaders as one-line view modifiers
+Unleash the GPU. Every `.metal` function ships precompiled in the package's `default.metallib` and is reached through `ShaderLibrary.bundle(.module)`, so each effect is exposed as a one-line SwiftUI view modifier built on `colorEffect`, `distortionEffect` and `layerEffect` — raw performance with declarative ease.
 
 <p align="center">
   <strong>🎨 34 Production-Ready Metal Shaders as SwiftUI View Modifiers</strong>
