@@ -51,6 +51,14 @@ jobs:
       - name: Test
         run: swift test --enable-code-coverage
 
+      # The gallery app is a separate package that depends on this one by path —
+      # the library's first external consumer. Building it here is the only check
+      # that the package is usable from outside its own build graph: a product
+      # that stops being vended, or a symbol that stops being public, fails here
+      # and nowhere else.
+      - name: Build gallery app
+        run: swift build --package-path Gallery
+
   lint:
     name: SwiftLint
     runs-on: ubuntu-latest

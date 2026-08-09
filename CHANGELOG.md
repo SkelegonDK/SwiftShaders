@@ -171,6 +171,17 @@ Also removed:
   `layerEffect` — instead of the Bridge that applied no shader.
 - `.metal` sources moved to `Sources/SwiftShaders/Metal/` and are excluded from the
   Swift build; the compiled `default.metallib` ships as a copied resource.
+- **The Gallery app moved to its own package**, `Gallery/`, which consumes the library
+  as a path dependency the way any other project would. The library manifest no longer
+  vends an executable: it has two library products and nothing else. Until now the app
+  shell shared the library's build graph, so nothing anywhere checked that the package
+  was usable from *outside* it — a product that stopped being vended, or a symbol that
+  stopped being public, would have gone unnoticed. CI now builds the app as a separate
+  step, making it the library's first CI-checked external consumer. The catalogue stays
+  in the root package as `SwiftShadersGalleryCore`: the test target imports it for the
+  coverage ledger and the render sweep, and a package cannot import a target from a
+  package that depends on it. Build the app with `make app` / `make gallery` as before,
+  or directly with `swift build --package-path Gallery`.
 
 ## [1.0.0] - 2026-02-03
 

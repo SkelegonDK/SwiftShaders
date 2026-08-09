@@ -9,10 +9,15 @@ cd "$(dirname "$0")/.."
 
 CONFIG="${1:-debug}"
 
+# The shell lives in its own package (Gallery/) that depends on this one by
+# path, so everything below builds with --package-path and reads back the
+# *nested* package's bin directory. default.metallib is still generated here:
+# it is a resource of the library target in the root package, and the path
+# dependency picks it up from this checkout.
 ./Scripts/build-shaders.sh
-swift build -c "$CONFIG" --product SwiftShadersGallery
+swift build --package-path Gallery -c "$CONFIG" --product SwiftShadersGallery
 
-BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
+BIN_DIR="$(swift build --package-path Gallery -c "$CONFIG" --show-bin-path)"
 APP="$BIN_DIR/SwiftShadersGallery.app"
 
 rm -rf "$APP"
@@ -21,7 +26,9 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/SwiftShadersGallery" "$APP/Contents/MacOS/"
 
 # The SwiftPM resource bundle carries default.metallib, which Bundle.module
-# resolves relative to the main bundle's Resources directory.
+# resolves relative to the main bundle's Resources directory. A path dependency
+# builds its resource bundles into the depending package's bin directory under
+# the same name, so this copy is unchanged apart from where BIN_DIR points.
 cp -R "$BIN_DIR/SwiftShaders_SwiftShaders.bundle" "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<'PLIST'

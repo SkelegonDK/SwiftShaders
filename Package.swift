@@ -23,10 +23,6 @@ let package = Package(
             name: "SwiftShadersGalleryCore",
             targets: ["SwiftShadersGalleryCore"]
         ),
-        .executable(
-            name: "SwiftShadersGallery",
-            targets: ["SwiftShadersGallery"]
-        ),
     ],
     targets: [
         // The `.metal` sources live in `Metal/` and are excluded from the Swift
@@ -66,12 +62,11 @@ let package = Package(
             dependencies: ["SwiftShaders"],
             path: "Sources/SwiftShadersGalleryCore"
         ),
-        // The app shell: `@main`, the browsing UI, the pasteboard.
-        .executableTarget(
-            name: "SwiftShadersGallery",
-            dependencies: ["SwiftShadersGalleryCore"],
-            path: "Sources/SwiftShadersGallery"
-        ),
+        // The app shell — `@main`, the browsing UI, the pasteboard — lives in
+        // its own package at `Gallery/`, which depends on this one by path. It
+        // is the library's first external consumer, so building it proves the
+        // package is usable from outside its own build graph. This manifest
+        // vends libraries only.
         .testTarget(
             name: "SwiftShadersTests",
             dependencies: ["SwiftShaders", "SwiftShadersGalleryCore"]

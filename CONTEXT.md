@@ -78,6 +78,13 @@ faithful, but a human still picks sensible slider ranges. The earlier `ShaderCat
 (a separate 30-row registry inside the library target, 19 of whose ids matched no
 public method) was deleted; do not recreate a second one.
 
+The *app shell* around it — `@main`, `ContentView`, `Pasteboard` — is a separate
+package, `Gallery/`, depending on this one by path. The split is the point: it makes
+the app an ordinary external consumer, so CI's `swift build --package-path Gallery`
+is the one check that the library is usable from outside its own build graph. The
+catalogue cannot follow it, because the test target imports `SwiftShadersGalleryCore`
+and a package cannot import a target from a package that depends on it.
+
 ## drift check
 
 A test that fails if a generated or hand-maintained artifact no longer matches the
