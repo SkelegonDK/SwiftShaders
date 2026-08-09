@@ -1,8 +1,10 @@
 .PHONY: gallery app shaders build test clean
 
 # Open the effects gallery (compiles shaders, builds, packages and launches).
+# The app is a separate package under Gallery/ that consumes this one as a path
+# dependency, so its build products land in Gallery/.build, not ours.
 gallery: app
-	open "$$(swift build --show-bin-path)/SwiftShadersGallery.app"
+	open "$$(swift build --package-path Gallery --show-bin-path)/SwiftShadersGallery.app"
 
 # Package the gallery as a double-clickable .app.
 app:
@@ -23,8 +25,9 @@ build: shaders
 test: shaders
 	swift test
 
-# Removes the generated metallib along with the build products. Both are
-# artifacts; neither is committed. Follow with `make build`, not `swift build`.
+# Removes the generated metallib along with the build products of both packages.
+# All are artifacts; none are committed. Follow with `make build`, not `swift build`.
 clean:
 	swift package clean
+	swift package --package-path Gallery clean
 	rm -f Sources/SwiftShaders/Resources/*.metallib

@@ -14,11 +14,16 @@ opt_in_rules:
   - private_action
   - redundant_nil_coalescing
 
+# Paths here are prefixes relative to this file, so a nested package needs its
+# own entries — `.build` alone does not match `Gallery/.build`.
+# Gallery/Sources is deliberately absent: the app shell is linted like the rest.
 excluded:
   - .build
   - .claude
   - Package.swift
   - DerivedData
+  - Gallery/.build
+  - Gallery/Package.swift
 
 line_length:
   warning: 120

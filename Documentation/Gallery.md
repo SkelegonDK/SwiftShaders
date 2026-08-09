@@ -9,6 +9,34 @@ make gallery
 That compiles the Metal shaders, builds the app, wraps it in a `.app` bundle and
 opens it.
 
+## Where it lives
+
+The app is its own package, `Gallery/`, which depends on the library by path:
+
+```
+Gallery/Package.swift                        the app's manifest
+Gallery/Sources/SwiftShadersGallery/         @main, ContentView, Pasteboard
+```
+
+It is deliberately a *consumer* of SwiftShaders rather than a target inside it, so
+building it exercises the library's real external surface — CI runs `swift build
+--package-path Gallery` for exactly that reason. To build it without the `.app`
+wrapper:
+
+```bash
+make shaders                        # default.metallib is a resource of the library
+swift build --package-path Gallery
+```
+
+`make shaders` first is not optional. The metallib is generated and not committed,
+and SwiftPM only *warns* about a declared-but-missing resource, so skipping it gets
+you an app that builds and then fails to draw every effect.
+
+The catalogue stays in the root package, as the `SwiftShadersGalleryCore` library —
+the test suite imports it, and a package cannot import a target from a package that
+depends on it. So an effect is added in the root package (below) and the app picks
+it up for free.
+
 ## What it does
 
 - **Browse** 91 effects across 9 categories, with a search field.
