@@ -34,6 +34,12 @@ Three threads, each reaching "nothing left to decide before someone executes":
 
 <!-- one line per closed ticket: gist + link -->
 
+- [Survey shader-based view-transition prior art](issues/04-transition-prior-art.md) —
+  Inferno (MIT) is the only polished prior art and nobody ships iOS 17
+  `Transition`-protocol shader transitions — an open niche; a gl-transition ports to
+  SwiftUI's single-layer model iff it samples `getToColor` only at raw `uv`; a
+  tiered shortlist (trivial wipes/irises → moderate warps → page curl) with licenses
+  is on branch `research/transition-prior-art`.
 - [Establish the SwiftUI mechanics for shader-driven transitions](issues/05-swiftui-transition-mechanics.md) —
   use the iOS 17 `Transition` protocol with an `Animatable` modifier animating one
   signed progress scalar (−1→0 insert, 0→+1 remove); progress-driven never
