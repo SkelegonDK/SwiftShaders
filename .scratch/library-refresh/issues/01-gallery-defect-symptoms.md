@@ -63,3 +63,13 @@ as priority cases.
 Open residuals for the user (optional enrichment, not blocking): which entries they
 personally saw failing, and whether "broken" meant black/no-op rendering or merely
 an unconvincing demo.
+
+## Addendum (2026-08-26, post-resolution)
+
+The user answered the residual question with a named list of 24 entries —
+Earthquake, Solarize, Posterize, Chromatic Aberration, X-Ray, Halftone, Emboss,
+Pencil Sketch, Cross Hatch, Ink, VHS, Data Corruption, Negative, Wireframe,
+Motion Blur, Tilt Shift, Lava, Noise, Infinite Grid, Clouds, Rain, Snow (both:
+particles fall upwards), Bubbles ("does not look like bubbles"), Confetti
+("needs a rework") — and asked for one ticket each. Created as tickets 09–32;
+the catalog sweep (07) now covers only the remaining entries.

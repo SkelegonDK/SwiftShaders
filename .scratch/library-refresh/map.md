@@ -9,7 +9,10 @@ Issues and migrating this map there is the user's call, not a route step.
 
 Three threads, each reaching "nothing left to decide before someone executes":
 1. A **documentation-update spec** — which documents change, to what scope and depth.
-2. A **gallery-app fix plan** — the defects named, diagnosed, and a decided approach.
+2. A **gallery-app fix plan** — the defects named, diagnosed, and a decided
+   approach — plus, added by the user 2026-08-26, specs for three gallery
+   enhancements: a custom-photo sample, full-layer effect coverage on control
+   samples, and a 3D object sample tab.
 3. A **spec for a shader-based view-transitions section** — API shape, initial
    transition set, and how it appears in the gallery — grounded in prior-art research.
 

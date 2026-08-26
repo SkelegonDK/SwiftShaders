@@ -3,7 +3,12 @@
 Part of [the Library refresh map](../map.md)
 Type: grilling
 Status: open
-Blocked by: 04, 05
+Blocked by: 04, 05, 36
+
+User feedback (2026-08-26): "All the transitions look great" — the existing
+tiered shortlist is endorsed; the user wants *more* candidates considered, so
+this decision now also waits on
+[Expand the transition candidate set](36-transition-set-expansion.md).
 
 ## Question
 

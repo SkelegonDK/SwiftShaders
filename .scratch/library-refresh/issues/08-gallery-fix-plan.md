@@ -3,16 +3,21 @@
 Part of [the Library refresh map](../map.md)
 Type: grilling
 Status: open
-Blocked by: 02, 07
+Blocked by: 02, 07, 09–32, 34
 
 ## Question
 
 With the defect inventory complete — user-visible symptoms
 ([Name the gallery app's defects](01-gallery-defect-symptoms.md)), headless
 findings ([Build and exercise the gallery app headlessly](02-gallery-headless-diagnosis.md)),
-and the presentation sweep
-([Sweep the catalog for undemonstrative examples](07-catalog-example-sweep.md)) —
-decide the fix plan: for each defect, fix now or defer, and the approach.
+the presentation sweep
+([Sweep the catalog for undemonstrative examples](07-catalog-example-sweep.md)),
+the 24 per-shader diagnoses the user requested (tickets 09–32), and the
+control-layer coverage decision
+([Decide how effects cover all layers of control samples](34-control-layer-coverage.md)) —
+assemble the fix plan: for each defect, fix now or defer, and the approach.
+This ticket aggregates and sequences; the per-defect decisions live in their own
+tickets.
 Known decision points already visible:
 
 - **D1 sidebar truncation** — two-line wrapping vs. wider column vs. shorter

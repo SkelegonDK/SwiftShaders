@@ -21,3 +21,7 @@ code defects, inventoried by
 cases may be appended here as they arrive. The answer is the flagged-entry list
 with the suspected presentation mechanism per entry — choosing new defaults or
 samples is the fix plan's decision, not this sweep's.
+
+**Scope narrowed 2026-08-26:** the user named 24 entries, each now carrying its
+own diagnosis ticket (09–32). This sweep covers only the *remaining* ~76 catalog
+entries — its job is catching what the user didn't happen to notice.
