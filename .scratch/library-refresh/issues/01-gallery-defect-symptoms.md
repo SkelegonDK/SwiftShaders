@@ -3,6 +3,7 @@
 Part of [the Library refresh map](../map.md)
 Type: grilling
 Status: open
+Assignee: Manuel Thomsen (session wayfinder-docs-shader-transitions-5dc4e7)
 
 ## Question
 
