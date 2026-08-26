@@ -9,7 +9,7 @@ Status: open
 [Name the gallery app's defects](01-gallery-defect-symptoms.md) established defect
 class **D2b**: catalog entries whose shader is correct but whose gallery example
 fails to show the effect. Enumerate them. AFK where possible: render each of the
-100 `EffectCatalog` entries at its default parameter values against its default
+91 `EffectCatalog` entries at its default parameter values against its default
 sample element (reuse the `GalleryRenderSweepTests` harness for offscreen
 rendering) and flag entries where the before/after difference is invisible or
 unrepresentative — checking specifically for: default parameter values that render
@@ -23,5 +23,15 @@ with the suspected presentation mechanism per entry — choosing new defaults or
 samples is the fix plan's decision, not this sweep's.
 
 **Scope narrowed 2026-08-26:** the user named 24 entries, each now carrying its
-own diagnosis ticket (09–32). This sweep covers only the *remaining* ~76 catalog
-entries — its job is catching what the user didn't happen to notice.
+own diagnosis ticket (09–32). This sweep covers only the *remaining* 67 catalog
+entries (91 total, not 100 — the earlier count was a grep artifact; corrected by
+[the headless diagnosis](02-gallery-headless-diagnosis.md)) — its job is catching
+what the user didn't happen to notice.
+
+**Headless priority flags (from
+[the headless diagnosis](02-gallery-headless-diagnosis.md), 2026-08-26):**
+`colorGrading` and `levels` are invisible at the gallery's default parameters
+(identity defaults, pinned in `GalleryRenderSweepTests.knownInvisibleAtDefaults`) —
+the exact "default parameter values that render near-invisibly" mechanism this
+sweep looks for. Everything else in the remaining 67 passes the mechanical
+visibility checks, so what's left here is visual judgment, not render failure.

@@ -13,3 +13,8 @@ entry's defaults, sample element, or `animated:` flag undersell a correct
 shader) — with a reproduction, and decide the fix. Respect the integrity guards
 (map Notes): say which guard moves if rendering or signatures change. The answer
 feeds [Decide the gallery fix plan](08-gallery-fix-plan.md).
+
+**Headless evidence (2026-08-26, [headless diagnosis](02-gallery-headless-diagnosis.md)):** this is a confirmed D2a — `infiniteGrid` never draws its grid
+(`RaymarchingShader.metal:464`): the antialiasing quotient always exceeds the
+smoothstep's upper edge, so `gridIntensity` is 0 everywhere and only the static
+horizon glow renders. Pinned in `GalleryRenderSweepTests.knownTimeIndependentEntries`.

@@ -61,6 +61,14 @@ Three threads, each reaching "nothing left to decide before someone executes":
   (unbound `scatterDissolve` already takes `progress` — cheapest win); four
   prior-survey verdicts corrected; full tiered doc on branch
   `research/transition-set-expansion`.
+- [Build and exercise the gallery app headlessly](issues/02-gallery-headless-diagnosis.md) —
+  the headless surface is green (91/91 tests, 0 compiler warnings in both packages)
+  and surfaced nothing new: the complete headless defect inventory is the 12 known
+  D2a shader-logic bugs (7c triage + the two time-ignoring voronois + `infiniteGrid`),
+  plus two mechanical D2b flags (`colorGrading`/`levels` invisible at defaults,
+  `rain` weakest signal in the catalog); the sweep proves the user's 24 named
+  entries all render, differ from control, and animate — so those diagnoses are
+  about *what* renders, not whether. Catalog is 91 entries, not 100.
 
 ## Not yet specified
 

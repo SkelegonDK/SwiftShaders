@@ -13,3 +13,8 @@ entry's defaults, sample element, or `animated:` flag undersell a correct
 shader) — with a reproduction, and decide the fix. Respect the integrity guards
 (map Notes): say which guard moves if rendering or signatures change. The answer
 feeds [Decide the gallery fix plan](08-gallery-fix-plan.md).
+
+**Headless evidence (2026-08-26, [headless diagnosis](02-gallery-headless-diagnosis.md)):** `rain` is the weakest-measuring entry in the entire catalog — render difference
+828 against the sweep's change threshold of 128 and floor of 512. It renders and
+animates, but it is the entry closest to invisible; the sweep even names it in its
+output. Consistent with a too-subtle default presentation.
