@@ -15,4 +15,9 @@ fails, what renders wrong, exact reproduction, and suspected owning component
 from `plans/7c-unused-variable-triage.md` (e.g. `directionalChromatic` ignores its
 angle, `voronoiShattered`/`voronoiStainedGlass` ignore time, `infiniteGrid` never
 draws its grid) so the inventory is complete. The answer is a defect inventory —
-fixing anything is a later, separate decision.
+fixing anything is a later, separate decision. Cross-check against the resolved
+defect list in [Name the gallery app's defects](01-gallery-defect-symptoms.md)
+(classes D1/D2a/D2b), so headless findings and user-visible symptoms land in one
+inventory; presentation-only judgments (class D2b) belong to
+[Sweep the catalog for undemonstrative examples](07-catalog-example-sweep.md),
+not here.

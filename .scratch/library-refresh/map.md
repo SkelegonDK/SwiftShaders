@@ -45,13 +45,15 @@ Three threads, each reaching "nothing left to decide before someone executes":
   signed progress scalar (−1→0 insert, 0→+1 remove); progress-driven never
   clock-driven, no-op at 0, constant `maxSampleOffset`, routed through the existing
   `ShaderBinding` path; full findings on branch `research/swiftui-transition-mechanics`.
+- [Name the gallery app's defects](issues/01-gallery-defect-symptoms.md) —
+  three defect classes from the user's seat: **D1** sidebar truncates effect names
+  (mechanism confirmed in `ContentView.swift`), **D2a** shader-logic bugs (the
+  already-triaged latent bugs — code wrong, no example can help), **D2b**
+  presentation defects (shader correct, gallery entry fails to demonstrate it);
+  D2b enumeration delegated to the new catalog-example sweep.
 
 ## Not yet specified
 
-- **Gallery fix plan detail** — can't be phrased until
-  [Name the gallery app's defects](issues/01-gallery-defect-symptoms.md) and the
-  headless diagnosis say what is actually broken; may graduate into several fix-decision
-  tickets or none.
 - **Docs-update spec detail** — which sections of README/API.md/GettingStarted change
   and how far, pending the scope grilling. Known raw material: `GettingStarted.md` is a
   one-line stub; `API.md` documents only a fraction of the 226 effect methods; the
