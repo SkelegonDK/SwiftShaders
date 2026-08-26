@@ -3,6 +3,7 @@
 Part of [the Library refresh map](../map.md)
 Type: research
 Status: open
+Assignee: research subagent (fired 2026-08-26 from session wayfinder-docs-shader-transitions-5dc4e7)
 
 ## Question
 
