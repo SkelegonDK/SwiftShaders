@@ -34,6 +34,12 @@ Three threads, each reaching "nothing left to decide before someone executes":
 
 <!-- one line per closed ticket: gist + link -->
 
+- [Establish the SwiftUI mechanics for shader-driven transitions](issues/05-swiftui-transition-mechanics.md) —
+  use the iOS 17 `Transition` protocol with an `Animatable` modifier animating one
+  signed progress scalar (−1→0 insert, 0→+1 remove); progress-driven never
+  clock-driven, no-op at 0, constant `maxSampleOffset`, routed through the existing
+  `ShaderBinding` path; full findings on branch `research/swiftui-transition-mechanics`.
+
 ## Not yet specified
 
 - **Gallery fix plan detail** — can't be phrased until
