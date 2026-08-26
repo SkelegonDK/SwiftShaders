@@ -2,7 +2,7 @@
 
 Part of [the Library refresh map](../map.md)
 Type: research
-Status: open
+Status: claimed
 
 ## Question
 
