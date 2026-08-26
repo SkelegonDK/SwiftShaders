@@ -54,6 +54,13 @@ Three threads, each reaching "nothing left to decide before someone executes":
   already-triaged latent bugs — code wrong, no example can help), **D2b**
   presentation defects (shader correct, gallery entry fails to demonstrate it);
   D2b enumeration delegated to the new catalog-example sweep.
+- [Expand the transition candidate set](issues/36-transition-set-expansion.md) —
+  all 125 gl-transitions classified from source: ~60% adoptable (35 trivial masks,
+  20 moderate self-displacing, 28 honest approximations), everything recommended
+  MIT, plus 23 original candidates from existing families and unbound functions
+  (unbound `scatterDissolve` already takes `progress` — cheapest win); four
+  prior-survey verdicts corrected; full tiered doc on branch
+  `research/transition-set-expansion`.
 
 ## Not yet specified
 
