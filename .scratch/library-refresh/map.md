@@ -77,6 +77,17 @@ Three threads, each reaching "nothing left to decide before someone executes":
   signature index, CODE_OF_CONDUCT contact fixed, everything else deliberately
   untouched. This completes destination thread 1 — the docs-update spec.
 
+- [Sweep the catalog for undemonstrative examples](issues/07-catalog-example-sweep.md) —
+  the 67 non-user-named entries rendered on the default card stage and judged:
+  three **new D2a shader bugs** diagnosed to the line (sepia's transposed matrix,
+  invert's premultiplied-alpha white-out, rgbSplit's ±2% no-op approximation),
+  ~15 D2b flags (identity/weak defaults: vibrance, softGlow, torchFlame,
+  sharpen/unsharpMask, filmGrain; content-burying defaults: dotMatrix,
+  mosaicHexagon, stainedGlass; white-on-white: lightning, electricField,
+  caustics), plus one systemic mechanism — many shaders paint the sample's
+  transparent padding as an opaque slab — covering a dozen entries with a single
+  fix-plan decision. Everything else demonstrates cleanly.
+
 ## Not yet specified
 
 - **Transitions vs. the integrity guards** — how new transition shaders (if any new

@@ -30,5 +30,13 @@ Known decision points already visible:
   plan must say which guards move.
 - **D2b presentation defects** — new defaults/samples per flagged entry.
 
+**Update 2026-08-27 (from the resolved sweep):** the D2a inventory grew by
+three — sepia (transposed matrix), invert (premultiplied-alpha white-out),
+rgbSplit (no-op approximation, layerEffect-class like chromaticAberration) —
+and the sweep surfaced one *systemic* decision: many shaders paint the sample's
+transparent padding as an opaque slab (mask by source alpha vs. document as
+field behaviour), which resolves a dozen per-entry flags at once. See
+[the sweep's answer](07-catalog-example-sweep.md) for the full flagged list.
+
 The answer is thread 2's destination: a fix plan with nothing left to decide
 before execution.
