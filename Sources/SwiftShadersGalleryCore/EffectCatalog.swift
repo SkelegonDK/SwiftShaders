@@ -6,7 +6,7 @@ import SwiftShaders
 /// Each entry pairs the real `View` extension call with the metadata needed to
 /// drive sliders and regenerate the equivalent Swift source. Adding an effect
 /// is one entry: the sidebar, preview and code panel all read from this list.
-// swiftlint:disable:next type_body_length — a declarative table of 91 entries; splitting it hides the inventory
+// swiftlint:disable:next type_body_length — a declarative table of 79 entries; splitting it hides the inventory
 public enum EffectCatalog {
 
     public static let all: [Effect] = distortion + color + stylize + retro + light + elements + generative + particles + transitions
@@ -135,98 +135,17 @@ public enum EffectCatalog {
 
     // MARK: - Colour
 
+    // Trimmed to chromaticAberration alone on 2026-08-27: the maintainer ruled
+    // colour-adjustment entries out of the gallery as not relevant to it. The
+    // effect *methods* all remain in the library — the removed entries live in
+    // the coverage ledger as `deliberatelyAbsent` with the same ruling.
     static let color: [Effect] = [
-        Effect("sepia", "Sepia", .color, "Classic warm monochrome.",
-               params: [.init("intensity", 0...1, 1)]) { v, p, _ in
-            AnyView(v.sepia(intensity: Float(p[0])))
-        },
-
-        Effect("colorGrading", "Colour Grading", .color, "Full grading controls.",
-               params: [
-                .init("brightness", -1...1, 0),
-                .init("contrast", 0...3, 1),
-                .init("saturation", 0...3, 1),
-                .init("hueShift", 0...6.28, 0),
-                .init("temperature", -1...1, 0),
-                .init("tint", -1...1, 0),
-               ]) { v, p, _ in
-            AnyView(v.colorGrading(brightness: p[0], contrast: p[1], saturation: p[2],
-                                   hueShift: p[3], temperature: p[4], tint: p[5]))
-        },
-
-        Effect("vibrance", "Vibrance", .color, "Saturates muted tones only.",
-               params: [.init("", -1...1, 0.3, title: "Amount")]) { v, p, _ in
-            AnyView(v.vibrance(p[0]))
-        },
-
-        Effect("invert", "Invert", .color, "Inverts colour channels.",
-               params: [.init("amount", 0...1, 1)]) { v, p, _ in
-            AnyView(v.invert(amount: Float(p[0])))
-        },
-
-        Effect("solarize", "Solarize", .color, "Inverts only above a threshold.",
-               params: [.init("threshold", 0...1, 0.5)]) { v, p, _ in
-            AnyView(v.solarize(threshold: Float(p[0])))
-        },
-
-        Effect("posterize", "Posterize", .color, "Quantises to N colour levels.",
-               params: [.init("levels", 2...16, 4, isInteger: true)]) { v, p, _ in
-            AnyView(v.posterize(levels: Float(p[0])))
-        },
-
-        Effect("threshold", "Threshold", .color, "Hard black/white cutoff.",
-               params: [.init("", 0...1, 0.5, title: "Threshold")]) { v, p, _ in
-            AnyView(v.threshold(Float(p[0])))
-        },
-
-        Effect("thresholdSmooth", "Soft Threshold", .color, "Threshold with a soft edge.",
-               params: [
-                .init("", 0...1, 0.5, title: "Threshold"),
-                .init("softness", 0...0.5, 0.1),
-               ]) { v, p, _ in
-            AnyView(v.thresholdSmooth(Float(p[0]), softness: Float(p[1])))
-        },
-
-        Effect("levels", "Levels", .color, "Input/output level remapping.",
-               params: [
-                .init("inputBlack", 0...1, 0),
-                .init("inputWhite", 0...1, 1),
-                .init("gamma", 0.1...3, 1),
-               ]) { v, p, _ in
-            AnyView(v.levels(inputBlack: p[0], inputWhite: p[1], gamma: p[2]))
-        },
-
-        Effect("splitToning", "Split Toning", .color, "Separate shadow and highlight tints.",
-               params: [
-                .init("shadowHue", 0...1, 0.1),
-                .init("shadowSaturation", 0...1, 0.2),
-                .init("highlightHue", 0...1, 0.6),
-                .init("highlightSaturation", 0...1, 0.2),
-                .init("balance", -1...1, 0),
-               ]) { v, p, _ in
-            AnyView(v.splitToning(shadowHue: p[0], shadowSaturation: p[1],
-                                  highlightHue: p[2], highlightSaturation: p[3], balance: p[4]))
-        },
-
         Effect("chromaticAberration", "Chromatic Aberration", .color, "Splits the RGB channels.",
                params: [
                 .init("intensity", 0...0.1, 0.01, decimals: 3),
                 .init("angle", 0...6.28, 0),
                ]) { v, p, _ in
             AnyView(v.chromaticAberration(intensity: p[0], angle: p[1]))
-        },
-
-        Effect("rgbSplit", "RGB Split", .color, "Offsets each channel independently.",
-               params: [
-                .init("splitX", -0.5...0.5, 0.1),
-                .init("splitY", -0.5...0.5, 0.1),
-               ]) { v, p, _ in
-            AnyView(v.rgbSplit(splitX: p[0], splitY: p[1]))
-        },
-
-        Effect("xray", "X-Ray", .color, "Inverted luminance with a cool cast.",
-               params: [.init("intensity", 0...1, 1)]) { v, p, _ in
-            AnyView(v.xray(intensity: Float(p[0])))
         },
     ]
 

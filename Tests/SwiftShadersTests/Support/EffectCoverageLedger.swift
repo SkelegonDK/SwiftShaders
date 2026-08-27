@@ -69,6 +69,12 @@ enum EffectCoverage {
         /// Kept only so 2.0.0 callers keep compiling. Cataloguing it would
         /// advertise the spelling being retired.
         static let deprecated = "deprecated shim, scheduled for removal"
+
+        /// Had a gallery entry until 2026-08-27, when the maintainer ruled
+        /// colour-adjustment effects not relevant to the gallery and removed
+        /// the Color category (keeping chromaticAberration). The methods stay
+        /// in the library; this is a curation decision, not a backlog item.
+        static let ruledOutOfGallery = "colour adjustment ruled out of the gallery by the maintainer (2026-08-27)"
     }
 
     struct Entry {
@@ -109,15 +115,15 @@ enum EffectCoverage {
         Entry("chromaticAberration(intensity:angle:)", .inGallery("chromaticAberration")),
         Entry("directionalChromatic(intensity:angle:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("pulsingChromatic(time:baseIntensity:pulseSpeed:pulseAmount:)", .deliberatelyAbsent(Absence.backlog)),
-        Entry("rgbSplit(splitX:splitY:)", .inGallery("rgbSplit")),
+        Entry("rgbSplit(splitX:splitY:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
 
         // MARK: ColorGrading
 
-        Entry("colorGrading(brightness:contrast:saturation:hueShift:temperature:tint:)", .inGallery("colorGrading")),
-        Entry("levels(inputBlack:inputWhite:gamma:outputBlack:outputWhite:)", .inGallery("levels")),
+        Entry("colorGrading(brightness:contrast:saturation:hueShift:temperature:tint:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
+        Entry("levels(inputBlack:inputWhite:gamma:outputBlack:outputWhite:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("curves(shadowLift:midtoneContrast:highlightCompress:)", .deliberatelyAbsent(Absence.backlog)),
-        Entry("splitToning(shadowHue:shadowSaturation:highlightHue:highlightSaturation:balance:)", .inGallery("splitToning")),
-        Entry("vibrance(_:)", .inGallery("vibrance")),
+        Entry("splitToning(shadowHue:shadowSaturation:highlightHue:highlightSaturation:balance:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
+        Entry("vibrance(_:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("filmEmulation(_:intensity:)", .deliberatelyAbsent(Absence.backlog)),
 
         // MARK: Displacement
@@ -218,12 +224,12 @@ enum EffectCoverage {
 
         // MARK: Invert
 
-        Entry("invert(amount:)", .inGallery("invert")),
+        Entry("invert(amount:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("invertSmart(threshold:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("invertChannels(red:green:blue:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("negativeFilm(orangeMask:)", .inGallery("negativeFilm")),
-        Entry("xray(intensity:)", .inGallery("xray")),
-        Entry("solarize(threshold:)", .inGallery("solarize")),
+        Entry("xray(intensity:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
+        Entry("solarize(threshold:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("invertAnimated(speed:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("invertRegion(at:radius:)", .deliberatelyAbsent(Absence.backlog)),
 
@@ -286,7 +292,7 @@ enum EffectCoverage {
 
         // MARK: Posterize
 
-        Entry("posterize(levels:)", .inGallery("posterize")),
+        Entry("posterize(levels:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("posterizePopArt(levels:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("posterizeDuotone(dark:light:levels:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("posterizeTritone(shadow:mid:highlight:levels:)", .deliberatelyAbsent(Absence.backlog)),
@@ -323,7 +329,7 @@ enum EffectCoverage {
 
         // MARK: Sepia
 
-        Entry("sepia(intensity:)", .inGallery("sepia")),
+        Entry("sepia(intensity:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("vintagePhoto(fadeAmount:warmth:contrast:)", .inGallery("vintagePhoto")),
         Entry("agedFilm(grainIntensity:scratchIntensity:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("polaroid(exposure:saturation:)", .inGallery("polaroid")),
@@ -359,10 +365,10 @@ enum EffectCoverage {
 
         // MARK: Threshold
 
-        Entry("threshold(_:)", .inGallery("threshold")),
+        Entry("threshold(_:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("threshold(_:low:high:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("thresholdDithered(_:)", .deliberatelyAbsent(Absence.backlog)),
-        Entry("thresholdSmooth(_:softness:)", .inGallery("thresholdSmooth")),
+        Entry("thresholdSmooth(_:softness:)", .deliberatelyAbsent(Absence.ruledOutOfGallery)),
         Entry("halftone(dotSize:angle:)", .inGallery("halftone")),
         Entry("thresholdLevels(_:)", .deliberatelyAbsent(Absence.backlog)),
         Entry("thresholdAnimated(speed:)", .deliberatelyAbsent(Absence.backlog)),

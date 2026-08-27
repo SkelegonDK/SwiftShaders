@@ -39,7 +39,7 @@ it up for free.
 
 ## What it does
 
-- **Browse** 91 effects across 9 categories, with a search field.
+- **Browse** 79 effects across 9 categories, with a search field.
 - **Preview** each one live on a real UI element — card, button, text, icon,
   photo or settings list — so you can see how it behaves on the kind of view
   you'd actually apply it to.

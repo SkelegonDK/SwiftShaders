@@ -129,15 +129,20 @@ final class EffectCoverageTests: XCTestCase {
 
     // MARK: - The ratchet
 
-    /// **Lower this number when you add gallery entries. Never raise it.**
+    /// **Lower this number when you add gallery entries. Raising it needs an
+    /// argued reason in the ledger.**
     ///
-    /// 121 of the library's 226 public effect methods have no Gallery entry.
+    /// 133 of the library's 226 public effect methods have no Gallery entry.
     /// That is a real gap, deliberately made visible rather than closed here:
     /// closing it means authoring ~350 slider ranges by hand, which is its own
     /// piece of work. This test is what stops the gap growing in the meantime —
     /// a new effect method added without a gallery entry pushes the count up and
     /// fails here.
-    static let deliberatelyAbsentCeiling = 121
+    ///
+    /// Raised 121 → 133 on 2026-08-27: the maintainer removed the gallery's
+    /// colour-adjustment entries as not relevant to it (see
+    /// `Absence.ruledOutOfGallery`) — a curation decision, not backlog growth.
+    static let deliberatelyAbsentCeiling = 133
 
     /// Equality, not `<=`.
     ///
@@ -194,6 +199,7 @@ final class EffectCoverageTests: XCTestCase {
             EffectCoverage.Absence.unsliderableInput,
             EffectCoverage.Absence.soleEntryPoint,
             EffectCoverage.Absence.deprecated,
+            EffectCoverage.Absence.ruledOutOfGallery,
         ]
         let unknown = EffectCoverage.absent
             .filter { !known.contains($0.reason) }

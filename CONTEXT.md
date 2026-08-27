@@ -71,7 +71,7 @@ instant is exact rather than sleep-based.
 ## gallery / catalog
 
 `EffectCatalog` (`Sources/SwiftShadersGalleryCore/EffectCatalog.swift`, in the
-importable `SwiftShadersGalleryCore` library target) is the hand-curated list of 91
+importable `SwiftShadersGalleryCore` library target) is the hand-curated list of 79
 effects the Gallery app previews, pairing each real `View` call with slider metadata.
 Deliberately not generated from the manifest or the ledger — those check it stays
 faithful, but a human still picks sensible slider ranges. The earlier `ShaderCatalog`

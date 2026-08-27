@@ -19,7 +19,7 @@
 Unleash the GPU. Every `.metal` function ships precompiled in the package's `default.metallib` and is reached through `ShaderLibrary.bundle(.module)`, so each effect is exposed as a one-line SwiftUI view modifier built on `colorEffect`, `distortionEffect` and `layerEffect` — raw performance with declarative ease.
 
 <p align="center">
-  <strong>🎨 256 Metal functions · 226 SwiftUI view modifiers · 91 in the interactive gallery</strong>
+  <strong>🎨 256 Metal functions · 226 SwiftUI view modifiers · 79 in the interactive gallery</strong>
 </p>
 
 <p align="center">
@@ -62,12 +62,12 @@ Every figure here is asserted by a test, so it cannot drift from the code:
 | …reachable through a `ShaderBinding` declaration | **207** | `ShaderBindingTests`, `UnboundFunctionInventoryTests` |
 | …with no binding, listed in `Resources/unbound-functions.txt` | **49** | `UnboundFunctionInventoryTests` |
 | Public `View` effect methods | **226** | `EffectCoverageTests` (a scanner over `Sources/`) |
-| …previewable in the Gallery app | **91** | `EffectCoverageTests`, `GalleryRenderSweepTests` |
+| …previewable in the Gallery app | **79** | `EffectCoverageTests`, `GalleryRenderSweepTests` |
 | …zero-argument presets of another method | **14** | `EffectCoverageTests` |
-| …with no Gallery entry yet — a tracked backlog | **121** | `EffectCoverageTests` ratchet |
+| …with no Gallery entry yet — a tracked backlog | **133** | `EffectCoverageTests` ratchet |
 | Metal source files | **33** | — |
 
-The gap between 226 methods and 91 gallery entries is a real backlog, not a
+The gap between 226 methods and 79 gallery entries is a real backlog, not a
 rounding error: `Tests/SwiftShadersTests/Support/EffectCoverageLedger.swift`
 names every method and what the Gallery does about it, and a ratchet test stops
 the backlog growing.

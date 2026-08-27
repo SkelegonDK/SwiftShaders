@@ -2,7 +2,7 @@
 
 Part of [the Library refresh map](../map.md)
 Type: task
-Status: open
+Status: closed (out of scope)
 
 ## Question
 
@@ -13,3 +13,10 @@ entry's defaults, sample element, or `animated:` flag undersell a correct
 shader) — with a reproduction, and decide the fix. Respect the integrity guards
 (map Notes): say which guard moves if rendering or signatures change. The answer
 feeds [Decide the gallery fix plan](08-gallery-fix-plan.md).
+
+## Closed out of scope (2026-08-27)
+
+The maintainer removed the gallery's colour-adjustment entries (Color category
+trimmed to chromaticAberration alone) as not relevant to the gallery, so this
+entry no longer exists to diagnose. The effect method remains in the library,
+ledgered as `deliberatelyAbsent` under `Absence.ruledOutOfGallery`.

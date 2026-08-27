@@ -100,7 +100,16 @@ Three threads, each reaching "nothing left to decide before someone executes":
 
 ## Out of scope
 
-- **The 121-entry gallery backlog** — pre-existing open work to grow gallery coverage
-  of the 226 effects; a separate effort, not part of this refresh.
+- **Colour-adjustment gallery entries** — ruled not relevant to the gallery by the
+  user (2026-08-27) and removed the same day: the Color category trimmed to
+  chromaticAberration alone (catalog 91 → 79; ledger, ratchet ceiling 121 → 133,
+  README/Gallery.md/CONTEXT.md counts and `knownInvisibleAtDefaults` all moved with
+  it, suite green). The effect *methods* stay in the library, ledgered under
+  `Absence.ruledOutOfGallery`. Closes
+  [Solarize](issues/10-solarize.md), [Posterize](issues/11-posterize.md) and
+  [X-Ray](issues/13-xray.md) — their entries no longer exist; the sweep's
+  sepia/invert/rgbSplit findings become library concerns, not gallery-fix work.
+- **The gallery-entry backlog (now 133)** — pre-existing open work to grow gallery
+  coverage of the 226 effects; a separate effort, not part of this refresh.
 - **Cutting the 2.0.0 release** — the CHANGELOG's unreleased 2.0.0 stays unreleased by
   this map; releasing is its own effort.

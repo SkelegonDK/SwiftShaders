@@ -3,7 +3,7 @@
 Part of [the Library refresh map](../map.md)
 Type: grilling
 Status: open
-Blocked by: 02, 07, 09–32, 34
+Blocked by: 02, 07, 09–32 (10/11/13 closed out of scope), 34
 
 ## Question
 
@@ -37,6 +37,14 @@ and the sweep surfaced one *systemic* decision: many shaders paint the sample's
 transparent padding as an opaque slab (mask by source alpha vs. document as
 field behaviour), which resolves a dozen per-entry flags at once. See
 [the sweep's answer](07-catalog-example-sweep.md) for the full flagged list.
+
+**Update 2026-08-27 (colour entries removed):** the user removed the gallery's
+colour-adjustment entries (Color category → chromaticAberration only), so the
+sweep's colour-entry flags — sepia, invert, rgbSplit (D2a), vibrance,
+colorGrading, levels (D2b) — are no longer gallery-fix work. The D2a bugs still
+exist in the *library's* shaders; whether to fix them there is a library-side
+decision this plan may note but does not own. Tickets 10/11/13 closed out of
+scope with the same ruling.
 
 The answer is thread 2's destination: a fix plan with nothing left to decide
 before execution.

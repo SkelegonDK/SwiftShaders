@@ -54,17 +54,17 @@ final class GalleryRenderSweepTests: XCTestCase {
     /// Catalogue entries that render nothing at the parameters the gallery opens
     /// on, and only become visible further along their sliders.
     ///
-    /// Both are neutral-by-construction rather than broken: `colorGrading`'s
-    /// defaults are an identity grade (brightness 0, contrast 1, saturation 1…)
-    /// and `levels` defaults to the identity transfer curve. A user opening
-    /// either sees the unmodified view until they move something.
+    /// Empty since 2026-08-27: the two members it had — `colorGrading` and
+    /// `levels`, both neutral-by-construction (identity grade, identity transfer
+    /// curve) — left the catalogue when the maintainer removed the gallery's
+    /// colour-adjustment entries.
     ///
     /// Pinned as a set, not printed, for the same reason
     /// ``knownTimeIndependentEntries`` is: a list that only gets logged is a
-    /// list nobody reads. A third entry appearing here is a new effect that is
+    /// list nobody reads. An entry appearing here is a new effect that is
     /// invisible on arrival, and that is a finding; one disappearing means
     /// somebody gave it live defaults, and the set must shrink with it.
-    static let knownInvisibleAtDefaults: Set<String> = ["colorGrading", "levels"]
+    static let knownInvisibleAtDefaults: Set<String> = []
 
     // MARK: - The sweep
 
