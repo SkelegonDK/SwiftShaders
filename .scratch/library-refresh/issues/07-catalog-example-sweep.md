@@ -2,7 +2,8 @@
 
 Part of [the Library refresh map](../map.md)
 Type: task
-Status: open
+Status: claimed
+Assignee: Manuel Thomsen (session wayfinder-docs-shader-transitions-5dc4e7, 2026-08-27)
 
 ## Question
 
