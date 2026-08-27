@@ -88,6 +88,12 @@ Three threads, each reaching "nothing left to decide before someone executes":
   transparent padding as an opaque slab — covering a dozen entries with a single
   fix-plan decision. Everything else demonstrates cleanly.
 
+- [Diagnose and decide the fix for Earthquake](issues/09-earthquake.md) —
+  **D2b**: the shader's one-shot `exp(-time·decay)` envelope is correct, but the
+  never-resetting gallery clock kills the shake ~10 s after opening (headless SAD
+  frozen at 12,186 from 20 s on); fix by looping the clock in the entry's catalog
+  closure (`t % 4`), shader and guards untouched.
+
 ## Not yet specified
 
 - **Transitions vs. the integrity guards** — how new transition shaders (if any new
