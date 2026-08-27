@@ -69,13 +69,16 @@ Three threads, each reaching "nothing left to decide before someone executes":
   `rain` weakest signal in the catalog); the sweep proves the user's 24 named
   entries all render, differ from control, and animate — so those diagnoses are
   about *what* renders, not whether. Catalog is 91 entries, not 100.
+- [Scope the documentation update](issues/03-docs-update-scope.md) —
+  the fork documents itself as its own library for an audience of the user's own
+  projects and agents: README fully rewritten under its existing guards (fork URL,
+  upstream marketing/benchmarks dropped, getting-started folded in),
+  GettingStarted.md deleted, API.md replaced by a generated staleness-guarded
+  signature index, CODE_OF_CONDUCT contact fixed, everything else deliberately
+  untouched. This completes destination thread 1 — the docs-update spec.
 
 ## Not yet specified
 
-- **Docs-update spec detail** — which sections of README/API.md/GettingStarted change
-  and how far, pending the scope grilling. Known raw material: `GettingStarted.md` is a
-  one-line stub; `API.md` documents only a fraction of the 226 effect methods; the
-  README carries upstream "2026 Unified Core" fork-marketing that may not fit this fork.
 - **Transitions vs. the integrity guards** — how new transition shaders (if any new
   Metal functions are needed) integrate with the manifest, coverage ledger, unbound-
   functions inventory and drift checks; sharp only after the section's shape is decided.
