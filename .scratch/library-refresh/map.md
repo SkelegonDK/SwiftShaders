@@ -4,6 +4,12 @@ Label: wayfinder:map
 Tracker: local markdown (`.scratch/library-refresh/`). GitHub Issues are disabled on
 the fork (SkelegonDK/SwiftShaders), so the GitHub tracker was unavailable; enabling
 Issues and migrating this map there is the user's call, not a route step.
+Mirrored to Linear 2026-08-29: project "SwiftShaders library refresh"
+(https://linear.app/manuel-thomsen/project/swiftshaders-library-refresh-7be541588bf0),
+team MAN. Ticket NN here ↔ Linear MAN-(NN+5), i.e. 01→MAN-6 … 36→MAN-41; statuses
+mapped resolved→Done, closed (out of scope)→Canceled, open→Todo, with the blocked-by
+relations on MAN-11 (ticket 06) and MAN-13 (ticket 08). The local markdown stays the
+working tracker; re-sync Linear when tickets change.
 
 ## Destination
 
